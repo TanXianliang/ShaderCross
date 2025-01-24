@@ -90,6 +90,9 @@ private:
     QPushButton *buildButton;  // 构建按钮
 
     QTextEdit *logEdit;  // 日志输出面板
+
+    void updateIncludeListHeight();
+    void updateMacroListHeight();
 };
 
 #endif // MAINWINDOW_H 

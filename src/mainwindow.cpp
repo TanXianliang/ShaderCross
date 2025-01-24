@@ -126,7 +126,17 @@ void MainWindow::setupUI()
     
     // 包含路径列表
     includePathList = new QListWidget(this);
-    includePathList->setMinimumHeight(100);  // 设置最小高度
+    includePathList->setMinimumHeight(48);  // 最小高度为2行 (24px * 2)
+    includePathList->setMaximumHeight(96);  // 最大高度为4行 (24px * 4)
+    
+    // 监听列表内容变化，动态调整高度
+    connect(includePathList->model(), &QAbstractItemModel::rowsInserted, this, [this]() {
+        updateIncludeListHeight();
+    });
+    connect(includePathList->model(), &QAbstractItemModel::rowsRemoved, this, [this]() {
+        updateIncludeListHeight();
+    });
+    
     includeLayout->addWidget(includePathList);
     
     // 添加/删除包含路径按钮
@@ -147,7 +157,17 @@ void MainWindow::setupUI()
     
     // 宏定义列表
     macroList = new QListWidget(this);
-    macroList->setMinimumHeight(100);  // 设置最小高度
+    macroList->setMinimumHeight(48);  // 最小高度为2行
+    macroList->setMaximumHeight(96);  // 最大高度为4行 (24px * 4)
+    
+    // 监听列表内容变化，动态调整高度
+    connect(macroList->model(), &QAbstractItemModel::rowsInserted, this, [this]() {
+        updateMacroListHeight();
+    });
+    connect(macroList->model(), &QAbstractItemModel::rowsRemoved, this, [this]() {
+        updateMacroListHeight();
+    });
+    
     macroLayout->addWidget(macroList);
     
     // 添加/删除宏按钮
@@ -808,4 +828,34 @@ void MainWindow::loadSettings()
     outputTypeCombo->setCurrentText(outputType);
     
     lastOpenDir = settings.value("lastOpenDir", QDir::currentPath()).toString();  // 加载目录
+}
+
+void MainWindow::updateIncludeListHeight()
+{
+    const int rowHeight = 24;  // 每行的高度
+    const int minRows = 2;     // 最少显示行数
+    const int maxRows = 4;     // 最多显示行数（改为4）
+    
+    // 计算当前内容需要的行数
+    int itemCount = includePathList->count();
+    int neededRows = qBound(minRows, itemCount, maxRows);
+    
+    // 设置新的高度（加上一些边距）
+    int newHeight = neededRows * rowHeight + 8;  // 8px for padding
+    includePathList->setFixedHeight(newHeight);
+}
+
+void MainWindow::updateMacroListHeight()
+{
+    const int rowHeight = 24;  // 每行的高度
+    const int minRows = 2;     // 最少显示行数
+    const int maxRows = 4;     // 最多显示行数（改为4）
+    
+    // 计算当前内容需要的行数
+    int itemCount = macroList->count();
+    int neededRows = qBound(minRows, itemCount, maxRows);
+    
+    // 设置新的高度（加上一些边距）
+    int newHeight = neededRows * rowHeight + 8;  // 8px for padding
+    macroList->setFixedHeight(newHeight);
 } 
