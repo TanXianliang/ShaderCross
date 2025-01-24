@@ -21,6 +21,7 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QStatusBar>
 #include <QtCore/QTimer>
+#include <QtGui/QMouseEvent>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -29,6 +30,12 @@ MainWindow::MainWindow(QWidget *parent)
     , lastGLSLCompiler("GLSLANG")  // 设置默认值
     , lastOpenDir(QDir::currentPath())  // 初始化为当前目录
 {
+    // 设置程序图标
+    setWindowIcon(QIcon(":/resources/icons/icons/icon.jpg"));
+    
+    // 设置窗口标题
+    setWindowTitle("ShaderCross");
+
     setupUI();
     createMenus();
     setupShortcuts();
@@ -39,10 +46,15 @@ MainWindow::MainWindow(QWidget *parent)
 void MainWindow::setupUI()
 {
     QWidget *centralWidget = new QWidget(this);
-    QHBoxLayout *mainLayout = new QHBoxLayout(centralWidget);
-    mainLayout->setSpacing(12);  // 增加主布局间距
-    mainLayout->setContentsMargins(12, 12, 12, 12);  // 增加边距
-    
+    QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
+    mainLayout->setSpacing(12);  // 恢复间距
+    mainLayout->setContentsMargins(12, 12, 12, 12);  // 恢复边距
+
+    // 原有的界面布局
+    QWidget *contentWidget = new QWidget(this);
+    QHBoxLayout *contentLayout = new QHBoxLayout(contentWidget);
+    mainLayout->addWidget(contentWidget);
+
     // Left panel
     QWidget *leftPanel = new QWidget(this);
     QVBoxLayout *leftLayout = new QVBoxLayout(leftPanel);
@@ -92,7 +104,7 @@ void MainWindow::setupUI()
     // File selection
     QHBoxLayout *fileLayout = new QHBoxLayout();
     filePathEdit = new QLineEdit(this);
-    browseButton = new QPushButton(QIcon(":/icons/browse.svg"), tr("Browse"), this);
+    browseButton = new QPushButton(QIcon(":/resources/icons/browse.svg"), tr("Browse"), this);
     browseButton->setObjectName("browseButton");  // 添加对象名
     fileLayout->addWidget(new QLabel(tr("Shader Path:")));
     fileLayout->addWidget(filePathEdit);
@@ -141,8 +153,8 @@ void MainWindow::setupUI()
     
     // 添加/删除包含路径按钮
     QHBoxLayout *includeButtonLayout = new QHBoxLayout();  // 创建水平布局
-    addIncludeButton = new QPushButton(QIcon(":/icons/add.svg"), tr("Add Path"), this);
-    removeIncludeButton = new QPushButton(QIcon(":/icons/remove.svg"), tr("Remove Path"), this);
+    addIncludeButton = new QPushButton(QIcon(":/resources/icons/add.svg"), tr("Add Path"), this);
+    removeIncludeButton = new QPushButton(QIcon(":/resources/icons/remove.svg"), tr("Remove Path"), this);
     includeButtonLayout->addWidget(addIncludeButton);
     includeButtonLayout->addWidget(removeIncludeButton);
     includeLayout->addLayout(includeButtonLayout);  // 将按钮布局添加到主布局
@@ -172,8 +184,8 @@ void MainWindow::setupUI()
     
     // 添加/删除宏按钮
     QHBoxLayout *macroButtonLayout = new QHBoxLayout();  // 创建水平布局
-    addMacroButton = new QPushButton(QIcon(":/icons/add.svg"), tr("Add Macro"), this);
-    removeMacroButton = new QPushButton(QIcon(":/icons/remove.svg"), tr("Remove Macro"), this);
+    addMacroButton = new QPushButton(QIcon(":/resources/icons/add.svg"), tr("Add Macro"), this);
+    removeMacroButton = new QPushButton(QIcon(":/resources/icons/remove.svg"), tr("Remove Macro"), this);
     macroButtonLayout->addWidget(addMacroButton);
     macroButtonLayout->addWidget(removeMacroButton);
     macroLayout->addLayout(macroButtonLayout);  // 将按钮布局添加到主布局
@@ -275,7 +287,6 @@ void MainWindow::setupUI()
     buildButton = new QPushButton(tr("Build"), this);
     buildButton->setObjectName("buildButton");  // 设置对象名，用于样式表定位
     buildButton->setFixedWidth(100);
-    buildButton->setIcon(QIcon(":/icons/build.png"));
     buildLayout->addWidget(buildButton);
     compilerLayout->addLayout(buildLayout);
 
@@ -355,8 +366,8 @@ void MainWindow::setupUI()
     
     rightLayout->addWidget(outputGroup);
     
-    mainLayout->addWidget(leftPanel, 1);
-    mainLayout->addWidget(rightPanel, 1);
+    contentLayout->addWidget(leftPanel, 1);
+    contentLayout->addWidget(rightPanel, 1);
     
     setCentralWidget(centralWidget);
     resize(1200, 800);
@@ -634,7 +645,74 @@ void MainWindow::applyTheme(bool dark)
                 outline: none !important;
             }
 
-            /* 移除 flat 按钮的特殊样式 */
+            /* 标题栏样式 */
+            QMenuBar {
+                background-color: #252526;
+                border-bottom: 1px solid #2d2d2d;
+                padding: 2px;
+                min-height: 28px;
+            }
+            
+            QMenuBar::item {
+                background: transparent;
+                padding: 4px 8px;
+                border-radius: 4px;
+                margin: 2px;
+                color: #d4d4d4;
+            }
+            
+            QMenuBar::item:selected {
+                background-color: #323233;
+                color: #ffffff;
+            }
+            
+            QMenuBar::item:pressed {
+                background-color: #2d2d2d;
+                color: #ffffff;
+            }
+            
+            QMenu {
+                background-color: #252526;
+                border: 1px solid #2d2d2d;
+                border-radius: 4px;
+                padding: 4px;
+            }
+            
+            QMenu::item {
+                padding: 6px 24px;
+                border-radius: 2px;
+                min-width: 150px;
+                color: #d4d4d4;
+            }
+            
+            QMenu::item:selected {
+                background-color: #323233;
+                color: #ffffff;
+            }
+            
+            QMenu::separator {
+                height: 1px;
+                background-color: #2d2d2d;
+                margin: 4px 0;
+            }
+
+            /* 窗口控制按钮样式 */
+            QPushButton#windowButton {
+                background: transparent;
+                border: none;
+                color: #d4d4d4;
+                font-family: "Segoe UI", sans-serif;
+                font-size: 14px;
+            }
+
+            QPushButton#windowButton:hover {
+                background-color: #3c3c3c;
+            }
+
+            QPushButton#closeButton:hover {
+                background-color: #c42b1c;
+                color: white;
+            }
         )";
         setStyleSheet(darkStyle);
     } else {
@@ -686,7 +764,61 @@ void MainWindow::applyTheme(bool dark)
                 outline: none !important;
             }
 
-            /* 移除 flat 按钮的特殊样式 */
+            /* 标题栏样式 */
+            QMenuBar {
+                background-color: #f5f5f5;
+                border-bottom: 1px solid #e0e0e0;
+                padding: 2px;
+                min-height: 28px;
+            }
+            
+            QMenuBar::item {
+                background: transparent;
+                padding: 4px 8px;
+                border-radius: 4px;
+                margin: 2px;
+            }
+            
+            QMenuBar::item:selected {
+                background-color: #e8e8e8;
+            }
+            
+            QMenuBar::item:pressed {
+                background-color: #d8d8d8;
+            }
+            
+            QMenu {
+                background-color: #ffffff;
+                border: 1px solid #e0e0e0;
+                border-radius: 4px;
+                padding: 4px;
+            }
+            
+            QMenu::item {
+                padding: 6px 24px;
+                border-radius: 2px;
+                min-width: 150px;
+            }
+            
+            QMenu::item:selected {
+                background-color: #e8e8e8;
+            }
+            
+            QMenu::separator {
+                height: 1px;
+                background-color: #e0e0e0;
+                margin: 4px 0;
+            }
+
+            /* 标题栏样式 */
+            QWidget#titleBar {
+                background-color: #f5f5f5;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+            QWidget#titleBar QLabel {
+                color: #000000;
+            }
         )";
         setStyleSheet(lightStyle);
     }

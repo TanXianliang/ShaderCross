@@ -28,7 +28,7 @@ include_directories(
 
 # 添加资源文件
 set(RESOURCE_FILES
-    src/resources/resources.qrc
+    resources.qrc
 )
 
 qt5_add_resources(QRC_SOURCES ${RESOURCE_FILES})
