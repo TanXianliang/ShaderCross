@@ -129,15 +129,13 @@ void MainWindow::setupUI()
     includePathList->setMinimumHeight(100);  // 设置最小高度
     includeLayout->addWidget(includePathList);
     
-    // 添加/删除按钮
-    QHBoxLayout *includeButtonLayout = new QHBoxLayout();
+    // 添加/删除包含路径按钮
+    QHBoxLayout *includeButtonLayout = new QHBoxLayout();  // 创建水平布局
     addIncludeButton = new QPushButton(QIcon(":/icons/add.svg"), tr("Add Path"), this);
     removeIncludeButton = new QPushButton(QIcon(":/icons/remove.svg"), tr("Remove Path"), this);
-    addIncludeButton->setFlat(true);
-    removeIncludeButton->setFlat(true);
     includeButtonLayout->addWidget(addIncludeButton);
     includeButtonLayout->addWidget(removeIncludeButton);
-    includeLayout->addLayout(includeButtonLayout);
+    includeLayout->addLayout(includeButtonLayout);  // 将按钮布局添加到主布局
     
     // 连接包含路径按钮的信号
     connect(addIncludeButton, &QPushButton::clicked, this, &MainWindow::onAddIncludePath);
@@ -152,15 +150,13 @@ void MainWindow::setupUI()
     macroList->setMinimumHeight(100);  // 设置最小高度
     macroLayout->addWidget(macroList);
     
-    // 添加/删除按钮
-    QHBoxLayout *macroButtonLayout = new QHBoxLayout();
+    // 添加/删除宏按钮
+    QHBoxLayout *macroButtonLayout = new QHBoxLayout();  // 创建水平布局
     addMacroButton = new QPushButton(QIcon(":/icons/add.svg"), tr("Add Macro"), this);
     removeMacroButton = new QPushButton(QIcon(":/icons/remove.svg"), tr("Remove Macro"), this);
-    addMacroButton->setFlat(true);
-    removeMacroButton->setFlat(true);
     macroButtonLayout->addWidget(addMacroButton);
     macroButtonLayout->addWidget(removeMacroButton);
-    macroLayout->addLayout(macroButtonLayout);
+    macroLayout->addLayout(macroButtonLayout);  // 将按钮布局添加到主布局
     
     // 连接宏定义按钮的信号
     connect(addMacroButton, &QPushButton::clicked, this, &MainWindow::onAddMacro);
@@ -589,143 +585,38 @@ void MainWindow::applyTheme(bool dark)
                 width: 24px;
             }
             
-            /* 所有按钮使用灰蓝色样式 */
+            /* 所有按钮使用统一的灰蓝色样式 */
             QPushButton {
-                background-color: #3c5c84;
-                border: none;
-                border-radius: 4px;
-                padding: 6px 12px;
-                color: white;
-                font-weight: bold;
-                min-height: 24px;
+                background-color: #3c5c84 !important;
+                border: none !important;
+                border-radius: 4px !important;
+                padding: 6px 12px !important;
+                color: white !important;
+                font-weight: bold !important;
+                min-height: 24px !important;
             }
             
             QPushButton:hover {
-                background-color: #4a6c94;
+                background-color: #4a6c94 !important;
             }
             
             QPushButton:pressed {
-                background-color: #2e4c74;
+                background-color: #2e4c74 !important;
             }
             
             QPushButton:disabled {
-                background-color: #2d4d74;
-                color: #a0a0a0;
+                background-color: #2d4d74 !important;
+                color: #a0a0a0 !important;
             }
             
             QPushButton:focus {
-                background-color: #3c5c84;  /* 保持焦点状态下的颜色不变 */
-                outline: none;  /* 移除焦点边框 */
+                background-color: #3c5c84 !important;
+                outline: none !important;
             }
 
-            /* 工具按钮（flat）特殊样式 */
-            QPushButton[flat="true"] {
-                background: transparent;
-                border: none;
-                padding: 4px;
-                font-weight: normal;
-            }
-            
-            QPushButton[flat="true"]:hover {
-                background-color: #4a6c94;
-            }
-            
-            QPushButton[flat="true"]:pressed {
-                background-color: #2e4c74;
-            }
-            
-            QPushButton[flat="true"]:focus {
-                background: transparent;  /* 保持透明背景 */
-            }
-            
-            QListWidget {
-                background-color: #1e1e1e;
-                border: 1px solid #2d2d2d;
-                border-radius: 4px;
-                padding: 4px;
-            }
-            
-            QListWidget::item {
-                padding: 4px;
-                border-radius: 2px;
-            }
-            
-            QListWidget::item:selected {
-                background-color: #264f78;
-            }
-            
-            QMenuBar {
-                background-color: #252526;
-                border-bottom: 1px solid #2d2d2d;
-            }
-            
-            QMenuBar::item:selected {
-                background-color: #323233;
-            }
-            
-            QMenu {
-                background-color: #252526;
-                border: 1px solid #2d2d2d;
-                padding: 4px;
-            }
-            
-            QMenu::item {
-                padding: 4px 24px;
-                border-radius: 2px;
-            }
-            
-            QMenu::item:selected {
-                background-color: #323233;
-            }
-            
-            QScrollBar:vertical {
-                background-color: #2d2d2d;  // 改为灰黑色
-                width: 14px;
-                margin: 0;
-            }
-            
-            QScrollBar::handle:vertical {
-                background-color: #424242;
-                min-height: 30px;
-                border-radius: 7px;
-                margin: 2px;
-            }
-            
-            QScrollBar::handle:vertical:hover {
-                background-color: #525252;
-            }
-            
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 0;
-            }
-            
-            QScrollBar:horizontal {
-                background-color: #2d2d2d;  // 改为灰黑色
-                height: 14px;
-                margin: 0;
-            }
-            
-            QScrollBar::handle:horizontal {
-                background-color: #424242;
-                min-width: 30px;
-                border-radius: 7px;
-                margin: 2px;
-            }
-            
-            QScrollBar::handle:horizontal:hover {
-                background-color: #525252;
-            }
-            
-            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-                width: 0;
-            }
+            /* 移除 flat 按钮的特殊样式 */
         )";
         setStyleSheet(darkStyle);
-        
-        // 使用代码设置下拉箭头图标
-        QStyle* style = QApplication::style();
-        QIcon downArrowIcon(":/icons/down-arrow-white.svg");
-        style->setProperty("standardIcon", QVariant::fromValue(downArrowIcon));
     } else {
         // 浅色主题
         QString lightStyle = R"(
@@ -746,61 +637,38 @@ void MainWindow::applyTheme(bool dark)
                 width: 24px;
             }
 
-            /* 所有按钮使用灰蓝色样式 */
+            /* 所有按钮使用统一的灰蓝色样式 */
             QPushButton {
-                background-color: #3c5c84;
-                border: none;
-                border-radius: 4px;
-                padding: 6px 12px;
-                color: white;
-                font-weight: bold;
-                min-height: 24px;
+                background-color: #3c5c84 !important;
+                border: none !important;
+                border-radius: 4px !important;
+                padding: 6px 12px !important;
+                color: white !important;
+                font-weight: bold !important;
+                min-height: 24px !important;
             }
             
             QPushButton:hover {
-                background-color: #4a6c94;
+                background-color: #4a6c94 !important;
             }
             
             QPushButton:pressed {
-                background-color: #2e4c74;
+                background-color: #2e4c74 !important;
             }
             
             QPushButton:disabled {
-                background-color: #2d4d74;
-                color: #a0a0a0;
+                background-color: #2d4d74 !important;
+                color: #a0a0a0 !important;
             }
             
             QPushButton:focus {
-                background-color: #3c5c84;  /* 保持焦点状态下的颜色不变 */
-                outline: none;  /* 移除焦点边框 */
+                background-color: #3c5c84 !important;
+                outline: none !important;
             }
 
-            /* 工具按钮（flat）特殊样式 */
-            QPushButton[flat="true"] {
-                background: transparent;
-                border: none;
-                padding: 4px;
-                font-weight: normal;
-            }
-            
-            QPushButton[flat="true"]:hover {
-                background-color: #4a6c94;
-            }
-            
-            QPushButton[flat="true"]:pressed {
-                background-color: #2e4c74;
-            }
-            
-            QPushButton[flat="true"]:focus {
-                background: transparent;  /* 保持透明背景 */
-            }
+            /* 移除 flat 按钮的特殊样式 */
         )";
         setStyleSheet(lightStyle);
-        
-        // 使用代码设置下拉箭头图标
-        QStyle* style = QApplication::style();
-        QIcon downArrowIcon(":/icons/down-arrow-black.svg");
-        style->setProperty("standardIcon", QVariant::fromValue(downArrowIcon));
     }
 }
 
