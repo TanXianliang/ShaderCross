@@ -8,6 +8,8 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QListWidget>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QStyle>
 
 class MainWindow : public QMainWindow
 {
@@ -82,6 +84,8 @@ private:
     QString lastOpenDir;    // 记录上次打开文件的目录
 
     QComboBox *shaderModelCombo;  // shader模型选择
+
+    QComboBox *outputTypeCombo;  // 输出类型选择
 };
 
 #endif // MAINWINDOW_H 

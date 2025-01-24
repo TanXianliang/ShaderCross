@@ -26,11 +26,19 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+# 添加资源文件
+set(RESOURCE_FILES
+    src/resources/resources.qrc
+)
+
+qt5_add_resources(QRC_SOURCES ${RESOURCE_FILES})
+
 # 源文件
 add_executable(ShaderCompiler
     src/main.cpp
     src/mainwindow.cpp
     src/mainwindow.h
+    ${QRC_SOURCES}
 )
 
 # 链接Qt库

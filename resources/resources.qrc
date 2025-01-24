@@ -1,0 +1,11 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/icons">
+        <file>icons/down-arrow-white.svg</file>
+        <file>icons/down-arrow-black.svg</file>
+        <file>icons/add.svg</file>
+        <file>icons/remove.svg</file>
+        <file>icons/browse.svg</file>
+        <file>icons/compile.svg</file>
+    </qresource>
+</RCC> 

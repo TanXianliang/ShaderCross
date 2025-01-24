@@ -16,6 +16,9 @@
 #include <QtCore/QStandardPaths>
 #include <QtCore/QDir>
 #include <QtCore/QCoreApplication>
+#include <QtWidgets/QPushButton>
+#include <QtGui/QIcon>
+#include <QtWidgets/QApplication>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -35,14 +38,18 @@ void MainWindow::setupUI()
 {
     QWidget *centralWidget = new QWidget(this);
     QHBoxLayout *mainLayout = new QHBoxLayout(centralWidget);
+    mainLayout->setSpacing(12);  // 增加主布局间距
+    mainLayout->setContentsMargins(12, 12, 12, 12);  // 增加边距
     
     // Left panel
     QWidget *leftPanel = new QWidget(this);
     QVBoxLayout *leftLayout = new QVBoxLayout(leftPanel);
+    leftLayout->setSpacing(12);  // 增加垂直间距
     
     // Input settings area
     QGroupBox *inputGroup = new QGroupBox(tr("Shader Input"), this);
     QVBoxLayout *inputLayout = new QVBoxLayout(inputGroup);
+    inputLayout->setSpacing(8);
     
     // Language selection
     QHBoxLayout *langLayout = new QHBoxLayout();
@@ -64,14 +71,14 @@ void MainWindow::setupUI()
         // 更新编译器列表
         compilerCombo->clear();
         if (language == "HLSL") {
-            compilerCombo->addItems(QStringList() << "DXC" << "FXC" << "GLSLANG");
+            compilerCombo->addItems(QStringList() << "DXC" << "FXC" << "GLSLANG" << "SPIRV-CROSS");
             // 恢复上次的HLSL编译器选择
             int index = compilerCombo->findText(lastHLSLCompiler);
             if (index >= 0) {
                 compilerCombo->setCurrentIndex(index);
             }
         } else if (language == "GLSL") {
-            compilerCombo->addItems(QStringList() << "GLSLANG");
+            compilerCombo->addItems(QStringList() << "GLSLANG" << "SPIRV-CROSS");
             // 恢复上次的GLSL编译器选择
             int index = compilerCombo->findText(lastGLSLCompiler);
             if (index >= 0) {
@@ -83,7 +90,7 @@ void MainWindow::setupUI()
     // File selection
     QHBoxLayout *fileLayout = new QHBoxLayout();
     filePathEdit = new QLineEdit(this);
-    browseButton = new QPushButton(tr("Browse"), this);
+    browseButton = new QPushButton(QIcon(":/icons/browse.svg"), tr("Browse"), this);
     fileLayout->addWidget(new QLabel(tr("Shader Path:")));
     fileLayout->addWidget(filePathEdit);
     fileLayout->addWidget(browseButton);
@@ -107,8 +114,8 @@ void MainWindow::setupUI()
 
     // 添加文件内容显示区域
     inputEdit = new QTextEdit(this);
-    inputEdit->setReadOnly(false);  // 改为可编辑
-    inputLayout->addWidget(inputEdit);
+    inputEdit->setReadOnly(false);
+    inputLayout->addWidget(inputEdit, 1);  // 添加拉伸因子1
     
     // 添加包含路径设置
     QGroupBox *includeGroup = new QGroupBox(tr("Include Paths"), this);
@@ -116,17 +123,18 @@ void MainWindow::setupUI()
     
     // 包含路径列表
     includePathList = new QListWidget(this);
+    includePathList->setMinimumHeight(100);  // 设置最小高度
     includeLayout->addWidget(includePathList);
     
     // 添加/删除按钮
     QHBoxLayout *includeButtonLayout = new QHBoxLayout();
-    addIncludeButton = new QPushButton(tr("Add Path"), this);
-    removeIncludeButton = new QPushButton(tr("Remove Path"), this);
+    addIncludeButton = new QPushButton(QIcon(":/icons/add.svg"), tr("Add Path"), this);
+    removeIncludeButton = new QPushButton(QIcon(":/icons/remove.svg"), tr("Remove Path"), this);
     includeButtonLayout->addWidget(addIncludeButton);
     includeButtonLayout->addWidget(removeIncludeButton);
     includeLayout->addLayout(includeButtonLayout);
     
-    // 连接信号
+    // 连接包含路径按钮的信号
     connect(addIncludeButton, &QPushButton::clicked, this, &MainWindow::onAddIncludePath);
     connect(removeIncludeButton, &QPushButton::clicked, this, &MainWindow::onRemoveIncludePath);
     
@@ -136,28 +144,29 @@ void MainWindow::setupUI()
     
     // 宏定义列表
     macroList = new QListWidget(this);
+    macroList->setMinimumHeight(100);  // 设置最小高度
     macroLayout->addWidget(macroList);
     
     // 添加/删除按钮
     QHBoxLayout *macroButtonLayout = new QHBoxLayout();
-    addMacroButton = new QPushButton(tr("Add Macro"), this);
-    removeMacroButton = new QPushButton(tr("Remove Macro"), this);
+    addMacroButton = new QPushButton(QIcon(":/icons/add.svg"), tr("Add Macro"), this);
+    removeMacroButton = new QPushButton(QIcon(":/icons/remove.svg"), tr("Remove Macro"), this);
     macroButtonLayout->addWidget(addMacroButton);
     macroButtonLayout->addWidget(removeMacroButton);
     macroLayout->addLayout(macroButtonLayout);
     
-    // 连接信号
+    // 连接宏定义按钮的信号
     connect(addMacroButton, &QPushButton::clicked, this, &MainWindow::onAddMacro);
     connect(removeMacroButton, &QPushButton::clicked, this, &MainWindow::onRemoveMacro);
     
-    leftLayout->addWidget(inputGroup);
+    leftLayout->addWidget(inputGroup, 1);
     leftLayout->addWidget(includeGroup);
     leftLayout->addWidget(macroGroup);
-    leftLayout->addStretch();
     
     // Right panel
     QWidget *rightPanel = new QWidget(this);
     QVBoxLayout *rightLayout = new QVBoxLayout(rightPanel);
+    rightLayout->setSpacing(12);
     
     // 编译器选项
     QGroupBox *compilerGroup = new QGroupBox(tr("Compiler Options"), this);
@@ -169,9 +178,9 @@ void MainWindow::setupUI()
     compilerCombo = new QComboBox(this);
     // 初始化编译器列表（根据默认的着色器语言）
     if (languageCombo->currentText() == "HLSL") {
-        compilerCombo->addItems(QStringList() << "DXC" << "FXC" << "GLSLANG");
+        compilerCombo->addItems(QStringList() << "DXC" << "FXC" << "GLSLANG" << "SPIRV-CROSS");
     } else {
-        compilerCombo->addItems(QStringList() << "GLSLANG");
+        compilerCombo->addItems(QStringList() << "GLSLANG" << "SPIRV-CROSS");
     }
     compilerToolLayout->addWidget(compilerCombo);
     compilerLayout->addLayout(compilerToolLayout);
@@ -220,15 +229,35 @@ void MainWindow::setupUI()
     shaderModelLayout->addWidget(shaderModelCombo);
     compilerLayout->addLayout(shaderModelLayout);
     
+    // 输出类型选择
+    QHBoxLayout *outputTypeLayout = new QHBoxLayout();
+    outputTypeLayout->addWidget(new QLabel(tr("Output Type:")));
+    outputTypeCombo = new QComboBox(this);
+    // 根据默认编译器设置初始输出类型选项
+    if (compilerCombo->currentText() == "DXC") {
+        outputTypeCombo->addItems(QStringList() << "DXIL" << "SPIR-V");
+    } else if (compilerCombo->currentText() == "FXC") {
+        outputTypeCombo->addItems(QStringList() << "DXBC");
+    } else if (compilerCombo->currentText() == "GLSLANG") {
+        outputTypeCombo->addItems(QStringList() << "SPIR-V");
+    } else if (compilerCombo->currentText() == "SPIRV-CROSS") {
+        outputTypeCombo->addItems(QStringList() << "HLSL" << "GLSL");
+    }
+    outputTypeLayout->addWidget(outputTypeCombo);
+    compilerLayout->addLayout(outputTypeLayout);
+    
     // 根据编译器选择更新界面
     connect(compilerCombo, &QComboBox::currentTextChanged, this, [this](const QString &compiler) {
-        // TODO: 根据不同编译器更新相关选项
+        // 根据编译器更新可用的输出类型
+        outputTypeCombo->clear();
         if (compiler == "DXC") {
-            // DXC特有选项
+            outputTypeCombo->addItems(QStringList() << "DXIL" << "SPIR-V");  // DXC只支持DXIL和SPIR-V
         } else if (compiler == "FXC") {
-            // FXC特有选项
+            outputTypeCombo->addItems(QStringList() << "DXBC");  // FXC只支持DXBC
         } else if (compiler == "GLSLANG") {
-            // GLSLANG特有选项
+            outputTypeCombo->addItems(QStringList() << "SPIR-V");  // GLSLANG只支持SPIR-V
+        } else if (compiler == "SPIRV-CROSS") {
+            outputTypeCombo->addItems(QStringList() << "HLSL" << "GLSL");  // SPIRV-CROSS支持HLSL和GLSL
         }
     });
     
@@ -442,58 +471,205 @@ void MainWindow::onRemoveMacro()
 void MainWindow::applyTheme(bool dark)
 {
     if (dark) {
-        // 暗色主题
+        // 现代暗色主题
         QString darkStyle = R"(
-            QMainWindow, QWidget { background-color: #2b2b2b; color: #d4d4d4; }
-            QGroupBox { 
-                background-color: #3c3f41; 
-                border: 1px solid #555555;
-                border-radius: 3px;
-                margin-top: 0.5em;
-                padding-top: 0.5em;
-            }
-            QGroupBox::title {
+            QMainWindow, QWidget {
+                background-color: #1e1e1e;
                 color: #d4d4d4;
+            }
+            
+            QGroupBox { 
+                background-color: #252526;
+                border: 1px solid #2d2d2d;
+                border-radius: 6px;
+                margin-top: 1.5em;  /* 增加顶部边距，给标题留出空间 */
+                padding: 1.2em 8px 8px 8px;  /* 增加顶部内边距 */
+                font-weight: bold;
+            }
+            
+            QGroupBox::title {
                 subcontrol-origin: margin;
                 left: 10px;
-                padding: 0 3px 0 3px;
+                top: 0.5em;  /* 调整标题位置 */
+                padding: 0 5px;
+                background-color: #252526;
+                color: #0098ff;
             }
-            QTextEdit, QLineEdit, QComboBox {
-                background-color: #3c3f41;
-                border: 1px solid #555555;
-                color: #d4d4d4;
-                selection-background-color: #214283;  /* 添加选中文本的背景色 */
-                selection-color: #ffffff;            /* 添加选中文本的前景色 */
+            
+            QTextEdit {
+                background-color: #1e1e1e;
+                border: 1px solid #2d2d2d;
+                border-radius: 4px;
+                padding: 4px;
+                selection-background-color: #264f78;
+                selection-color: #ffffff;
+                font-family: "Consolas", "Source Code Pro", monospace;
             }
-            QPushButton {
-                background-color: #4c5052;
-                border: 1px solid #555555;
-                color: #d4d4d4;
+            
+            QLineEdit, QComboBox {
+                background-color: #3c3c3c;
+                border: 1px solid #2d2d2d;
+                border-radius: 4px;
                 padding: 4px 8px;
+                min-height: 24px;
+                selection-background-color: #264f78;
             }
+            
+            QComboBox::drop-down {
+                border: none;
+                width: 24px;
+            }
+            
+            QPushButton {
+                background-color: #3c5c84; /* 灰蓝色 */
+                border: none;
+                border-radius: 4px;
+                padding: 6px 12px;
+                color: white;
+                font-weight: bold;
+                min-height: 24px;
+            }
+            
             QPushButton:hover {
-                background-color: #565656;
+                background-color: #4a6c94; /* hover时稍微变亮 */
             }
+            
+            QPushButton:pressed {
+                background-color: #2e4c74; /* 按下时变暗 */
+            }
+            
+            QListWidget {
+                background-color: #1e1e1e;
+                border: 1px solid #2d2d2d;
+                border-radius: 4px;
+                padding: 4px;
+            }
+            
+            QListWidget::item {
+                padding: 4px;
+                border-radius: 2px;
+            }
+            
+            QListWidget::item:selected {
+                background-color: #264f78;
+            }
+            
             QMenuBar {
-                background-color: #3c3f41;
-                color: #d4d4d4;
+                background-color: #252526;
+                border-bottom: 1px solid #2d2d2d;
             }
+            
             QMenuBar::item:selected {
-                background-color: #4b6eaf;
+                background-color: #323233;
             }
+            
             QMenu {
-                background-color: #3c3f41;
-                color: #d4d4d4;
-                border: 1px solid #555555;
+                background-color: #252526;
+                border: 1px solid #2d2d2d;
+                padding: 4px;
             }
+            
+            QMenu::item {
+                padding: 4px 24px;
+                border-radius: 2px;
+            }
+            
             QMenu::item:selected {
-                background-color: #4b6eaf;
+                background-color: #323233;
+            }
+            
+            QScrollBar:vertical {
+                background-color: #1e1e1e;
+                width: 14px;
+                margin: 0;
+            }
+            
+            QScrollBar::handle:vertical {
+                background-color: #424242;
+                min-height: 30px;
+                border-radius: 7px;
+                margin: 2px;
+            }
+            
+            QScrollBar::handle:vertical:hover {
+                background-color: #525252;
+            }
+            
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0;
+            }
+            
+            QScrollBar:horizontal {
+                background-color: #1e1e1e;
+                height: 14px;
+                margin: 0;
+            }
+            
+            QScrollBar::handle:horizontal {
+                background-color: #424242;
+                min-width: 30px;
+                border-radius: 7px;
+                margin: 2px;
+            }
+            
+            QScrollBar::handle:horizontal:hover {
+                background-color: #525252;
+            }
+            
+            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+                width: 0;
             }
         )";
         setStyleSheet(darkStyle);
+        
+        // 使用代码设置下拉箭头图标
+        QStyle* style = QApplication::style();
+        QIcon downArrowIcon(":/icons/down-arrow-white.svg");
+        style->setProperty("standardIcon", QVariant::fromValue(downArrowIcon));
     } else {
-        // 恢复默认主题
-        setStyleSheet("");
+        // 浅色主题
+        QString lightStyle = R"(
+            QGroupBox { 
+                margin-top: 1.5em;
+                padding: 1.2em 8px 8px 8px;
+            }
+            
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                top: 0.5em;
+                padding: 0 5px;
+            }
+
+            QComboBox::drop-down {
+                border: none;
+                width: 24px;
+            }
+
+            QPushButton {
+                background-color: #3c5c84; /* 灰蓝色 */
+                border: none;
+                border-radius: 4px;
+                padding: 6px 12px;
+                color: white;
+                font-weight: bold;
+                min-height: 24px;
+            }
+            
+            QPushButton:hover {
+                background-color: #4a6c94; /* hover时稍微变亮 */
+            }
+            
+            QPushButton:pressed {
+                background-color: #2e4c74; /* 按下时变暗 */
+            }
+        )";
+        setStyleSheet(lightStyle);
+        
+        // 使用代码设置下拉箭头图标
+        QStyle* style = QApplication::style();
+        QIcon downArrowIcon(":/icons/down-arrow-black.svg");
+        style->setProperty("standardIcon", QVariant::fromValue(downArrowIcon));
     }
 }
 
@@ -525,6 +701,7 @@ void MainWindow::saveSettings()
     settings.setValue("entryPoint", entryPointEdit->text());
     settings.setValue("shaderType", shaderTypeCombo->currentText());
     settings.setValue("shaderModel", shaderModelCombo->currentText());
+    settings.setValue("outputType", outputTypeCombo->currentText());
     
     // 保存包含路径
     QStringList includePaths;
@@ -626,6 +803,10 @@ void MainWindow::loadSettings()
     // 加载shader模型
     QString shaderModel = settings.value("shaderModel", "5.0").toString();
     shaderModelCombo->setCurrentText(shaderModel);
+    
+    // 加载输出类型
+    QString outputType = settings.value("outputType", "DXIL").toString();
+    outputTypeCombo->setCurrentText(outputType);
     
     lastOpenDir = settings.value("lastOpenDir", QDir::currentPath()).toString();  // 加载目录
 } 
