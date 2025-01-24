@@ -19,6 +19,8 @@
 #include <QtWidgets/QPushButton>
 #include <QtGui/QIcon>
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QStatusBar>
+#include <QtCore/QTimer>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -91,6 +93,7 @@ void MainWindow::setupUI()
     QHBoxLayout *fileLayout = new QHBoxLayout();
     filePathEdit = new QLineEdit(this);
     browseButton = new QPushButton(QIcon(":/icons/browse.svg"), tr("Browse"), this);
+    browseButton->setObjectName("browseButton");  // 添加对象名
     fileLayout->addWidget(new QLabel(tr("Shader Path:")));
     fileLayout->addWidget(filePathEdit);
     fileLayout->addWidget(browseButton);
@@ -130,6 +133,8 @@ void MainWindow::setupUI()
     QHBoxLayout *includeButtonLayout = new QHBoxLayout();
     addIncludeButton = new QPushButton(QIcon(":/icons/add.svg"), tr("Add Path"), this);
     removeIncludeButton = new QPushButton(QIcon(":/icons/remove.svg"), tr("Remove Path"), this);
+    addIncludeButton->setFlat(true);
+    removeIncludeButton->setFlat(true);
     includeButtonLayout->addWidget(addIncludeButton);
     includeButtonLayout->addWidget(removeIncludeButton);
     includeLayout->addLayout(includeButtonLayout);
@@ -151,6 +156,8 @@ void MainWindow::setupUI()
     QHBoxLayout *macroButtonLayout = new QHBoxLayout();
     addMacroButton = new QPushButton(QIcon(":/icons/add.svg"), tr("Add Macro"), this);
     removeMacroButton = new QPushButton(QIcon(":/icons/remove.svg"), tr("Remove Macro"), this);
+    addMacroButton->setFlat(true);
+    removeMacroButton->setFlat(true);
     macroButtonLayout->addWidget(addMacroButton);
     macroButtonLayout->addWidget(removeMacroButton);
     macroLayout->addLayout(macroButtonLayout);
@@ -245,20 +252,62 @@ void MainWindow::setupUI()
     }
     outputTypeLayout->addWidget(outputTypeCombo);
     compilerLayout->addLayout(outputTypeLayout);
-    
-    // 根据编译器选择更新界面
-    connect(compilerCombo, &QComboBox::currentTextChanged, this, [this](const QString &compiler) {
-        // 根据编译器更新可用的输出类型
-        outputTypeCombo->clear();
-        if (compiler == "DXC") {
-            outputTypeCombo->addItems(QStringList() << "DXIL" << "SPIR-V");  // DXC只支持DXIL和SPIR-V
-        } else if (compiler == "FXC") {
-            outputTypeCombo->addItems(QStringList() << "DXBC");  // FXC只支持DXBC
-        } else if (compiler == "GLSLANG") {
-            outputTypeCombo->addItems(QStringList() << "SPIR-V");  // GLSLANG只支持SPIR-V
-        } else if (compiler == "SPIRV-CROSS") {
-            outputTypeCombo->addItems(QStringList() << "HLSL" << "GLSL");  // SPIRV-CROSS支持HLSL和GLSL
+
+    // 添加构建按钮
+    QHBoxLayout *buildLayout = new QHBoxLayout();
+    buildLayout->addStretch();  // 添加弹性空间，使按钮靠右对齐
+    buildButton = new QPushButton(tr("Build"), this);
+    buildButton->setObjectName("buildButton");  // 设置对象名，用于样式表定位
+    buildButton->setFixedWidth(100);
+    buildButton->setIcon(QIcon(":/icons/build.png"));
+    buildLayout->addWidget(buildButton);
+    compilerLayout->addLayout(buildLayout);
+
+    // 连接构建按钮的点击信号
+    connect(buildButton, &QPushButton::clicked, this, [this]() {
+        // 清空日志
+        logEdit->clear();
+        
+        // 1. 收集编译选项
+        QString compiler = compilerCombo->currentText();
+        QString shaderType = shaderTypeCombo->currentText();
+        QString entryPoint = entryPointEdit->text();
+        QString shaderModel = shaderModelCombo->currentText();
+        QString outputType = outputTypeCombo->currentText();
+
+        // 2. 验证输入
+        if (filePathEdit->text().isEmpty()) {
+            logEdit->setTextColor(Qt::red);
+            logEdit->append(tr("Error: Please select a shader file."));
+            return;
         }
+
+        // 3. 构建编译命令
+        // TODO: 根据不同编译器构建具体的命令
+
+        // 4. 执行编译
+        // TODO: 实现异步编译过程
+        
+        // 5. 更新界面状态
+        buildButton->setEnabled(false);  // 禁用按钮直到编译完成
+        statusBar()->showMessage(tr("Building..."));  // 显示编译状态
+        
+        // 模拟编译过程（临时代码）
+        QTimer::singleShot(1000, this, [this]() {
+            // 编译成功示例
+            logEdit->setTextColor(Qt::green);
+            logEdit->append(tr("Build succeeded."));
+            
+            // 编译失败示例
+            /*
+            logEdit->setTextColor(Qt::red);
+            logEdit->append(tr("Error: Compilation failed."));
+            logEdit->append(tr("error X3000: syntax error: unexpected token 'void'"));
+            */
+            
+            buildButton->setEnabled(true);
+            statusBar()->clearMessage();
+        });
     });
     
     rightLayout->addWidget(compilerGroup);
@@ -266,8 +315,28 @@ void MainWindow::setupUI()
     // Output area
     QGroupBox *outputGroup = new QGroupBox(tr("Output"), this);
     QVBoxLayout *outputLayout = new QVBoxLayout(outputGroup);
+    
+    // 编译输出
     outputEdit = new QTextEdit(this);
+    outputEdit->setReadOnly(true);  // 设置为只读
     outputLayout->addWidget(outputEdit);
+    
+    // 添加分隔线
+    QFrame *line = new QFrame(this);
+    line->setFrameShape(QFrame::HLine);
+    line->setFrameShadow(QFrame::Sunken);
+    outputLayout->addWidget(line);
+    
+    // 日志面板
+    QHBoxLayout *logLayout = new QHBoxLayout();
+    logLayout->addWidget(new QLabel(tr("Log:")));
+    logEdit = new QTextEdit(this);
+    logEdit->setReadOnly(true);  // 设置为只读
+    logEdit->setMaximumHeight(100);  // 限制最大高度
+    logEdit->setStyleSheet("QTextEdit { font-family: 'Consolas', monospace; }");  // 使用等宽字体
+    logLayout->addWidget(logEdit);
+    outputLayout->addLayout(logLayout);
+    
     rightLayout->addWidget(outputGroup);
     
     mainLayout->addWidget(leftPanel, 1);
@@ -520,8 +589,9 @@ void MainWindow::applyTheme(bool dark)
                 width: 24px;
             }
             
+            /* 所有按钮使用灰蓝色样式 */
             QPushButton {
-                background-color: #3c5c84; /* 灰蓝色 */
+                background-color: #3c5c84;
                 border: none;
                 border-radius: 4px;
                 padding: 6px 12px;
@@ -531,11 +601,41 @@ void MainWindow::applyTheme(bool dark)
             }
             
             QPushButton:hover {
-                background-color: #4a6c94; /* hover时稍微变亮 */
+                background-color: #4a6c94;
             }
             
             QPushButton:pressed {
-                background-color: #2e4c74; /* 按下时变暗 */
+                background-color: #2e4c74;
+            }
+            
+            QPushButton:disabled {
+                background-color: #2d4d74;
+                color: #a0a0a0;
+            }
+            
+            QPushButton:focus {
+                background-color: #3c5c84;  /* 保持焦点状态下的颜色不变 */
+                outline: none;  /* 移除焦点边框 */
+            }
+
+            /* 工具按钮（flat）特殊样式 */
+            QPushButton[flat="true"] {
+                background: transparent;
+                border: none;
+                padding: 4px;
+                font-weight: normal;
+            }
+            
+            QPushButton[flat="true"]:hover {
+                background-color: #4a6c94;
+            }
+            
+            QPushButton[flat="true"]:pressed {
+                background-color: #2e4c74;
+            }
+            
+            QPushButton[flat="true"]:focus {
+                background: transparent;  /* 保持透明背景 */
             }
             
             QListWidget {
@@ -579,7 +679,7 @@ void MainWindow::applyTheme(bool dark)
             }
             
             QScrollBar:vertical {
-                background-color: #1e1e1e;
+                background-color: #2d2d2d;  // 改为灰黑色
                 width: 14px;
                 margin: 0;
             }
@@ -600,7 +700,7 @@ void MainWindow::applyTheme(bool dark)
             }
             
             QScrollBar:horizontal {
-                background-color: #1e1e1e;
+                background-color: #2d2d2d;  // 改为灰黑色
                 height: 14px;
                 margin: 0;
             }
@@ -646,8 +746,9 @@ void MainWindow::applyTheme(bool dark)
                 width: 24px;
             }
 
+            /* 所有按钮使用灰蓝色样式 */
             QPushButton {
-                background-color: #3c5c84; /* 灰蓝色 */
+                background-color: #3c5c84;
                 border: none;
                 border-radius: 4px;
                 padding: 6px 12px;
@@ -657,11 +758,41 @@ void MainWindow::applyTheme(bool dark)
             }
             
             QPushButton:hover {
-                background-color: #4a6c94; /* hover时稍微变亮 */
+                background-color: #4a6c94;
             }
             
             QPushButton:pressed {
-                background-color: #2e4c74; /* 按下时变暗 */
+                background-color: #2e4c74;
+            }
+            
+            QPushButton:disabled {
+                background-color: #2d4d74;
+                color: #a0a0a0;
+            }
+            
+            QPushButton:focus {
+                background-color: #3c5c84;  /* 保持焦点状态下的颜色不变 */
+                outline: none;  /* 移除焦点边框 */
+            }
+
+            /* 工具按钮（flat）特殊样式 */
+            QPushButton[flat="true"] {
+                background: transparent;
+                border: none;
+                padding: 4px;
+                font-weight: normal;
+            }
+            
+            QPushButton[flat="true"]:hover {
+                background-color: #4a6c94;
+            }
+            
+            QPushButton[flat="true"]:pressed {
+                background-color: #2e4c74;
+            }
+            
+            QPushButton[flat="true"]:focus {
+                background: transparent;  /* 保持透明背景 */
             }
         )";
         setStyleSheet(lightStyle);

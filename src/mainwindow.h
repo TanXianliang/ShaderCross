@@ -86,6 +86,10 @@ private:
     QComboBox *shaderModelCombo;  // shader模型选择
 
     QComboBox *outputTypeCombo;  // 输出类型选择
+
+    QPushButton *buildButton;  // 构建按钮
+
+    QTextEdit *logEdit;  // 日志输出面板
 };
 
 #endif // MAINWINDOW_H 
