@@ -38,6 +38,12 @@ add_executable(ShaderCompiler
     src/main.cpp
     src/mainwindow.cpp
     src/mainwindow.h
+    src/fxcCompiler.cpp
+    src/fxcCompiler.h
+    src/compilerConfig.h
+    src/compilerConfig.cpp
+    src/languageConfig.h
+    src/languageConfig.cpp
     ${QRC_SOURCES}
 )
 

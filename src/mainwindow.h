@@ -10,6 +10,7 @@
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QStyle>
+#include "fxcCompiler.h"
 
 class MainWindow : public QMainWindow
 {
@@ -39,6 +40,8 @@ private slots:
     void onRemoveMacro();
 
 private:
+    fxcCompiler *compiler;
+
     // 输入设置控件
     QComboBox *languageCombo;
     QLineEdit *filePathEdit;

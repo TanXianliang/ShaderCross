@@ -22,6 +22,10 @@
 #include <QtWidgets/QStatusBar>
 #include <QtCore/QTimer>
 #include <QtGui/QMouseEvent>
+#include "fxcCompiler.h"
+#include "compilerConfig.h"
+#include <QDebug>
+#include "languageConfig.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -29,6 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
     , lastHLSLCompiler("DXC")      // 设置默认值
     , lastGLSLCompiler("GLSLANG")  // 设置默认值
     , lastOpenDir(QDir::currentPath())  // 初始化为当前目录
+    , compiler(new fxcCompiler(this))
 {
     // 设置程序图标
     setWindowIcon(QIcon(":/resources/icons.jpg"));
@@ -41,6 +46,16 @@ MainWindow::MainWindow(QWidget *parent)
     setupShortcuts();
     applyTheme(isDarkTheme);
     loadSettings();  // 加载上次的设置
+
+    connect(compiler, &fxcCompiler::compilationFinished, this, [this](const QString &output) {
+        logEdit->setTextColor(Qt::green);
+        logEdit->append(tr("Compilation succeeded:\n") + output);
+    });
+
+    connect(compiler, &fxcCompiler::compilationError, this, [this](const QString &error) {
+        logEdit->setTextColor(Qt::red);
+        logEdit->append(tr("Compilation error:\n") + error);
+    });
 }
 
 void MainWindow::setupUI()
@@ -72,34 +87,6 @@ void MainWindow::setupUI()
     langLayout->addWidget(new QLabel(tr("Shader Language:")));
     langLayout->addWidget(languageCombo);
     inputLayout->addLayout(langLayout);
-    
-    // 连接着色器语言选择的信号
-    connect(languageCombo, &QComboBox::currentTextChanged, this, [this](const QString &language) {
-        // 保存当前编译器选择
-        if (language == "HLSL") {
-            lastGLSLCompiler = compilerCombo->currentText();
-        } else {
-            lastHLSLCompiler = compilerCombo->currentText();
-        }
-
-        // 更新编译器列表
-        compilerCombo->clear();
-        if (language == "HLSL") {
-            compilerCombo->addItems(QStringList() << "DXC" << "FXC" << "GLSLANG" << "SPIRV-CROSS");
-            // 恢复上次的HLSL编译器选择
-            int index = compilerCombo->findText(lastHLSLCompiler);
-            if (index >= 0) {
-                compilerCombo->setCurrentIndex(index);
-            }
-        } else if (language == "GLSL") {
-            compilerCombo->addItems(QStringList() << "GLSLANG" << "SPIRV-CROSS");
-            // 恢复上次的GLSL编译器选择
-            int index = compilerCombo->findText(lastGLSLCompiler);
-            if (index >= 0) {
-                compilerCombo->setCurrentIndex(index);
-            }
-        }
-    });
     
     // File selection
     QHBoxLayout *fileLayout = new QHBoxLayout();
@@ -203,34 +190,33 @@ void MainWindow::setupUI()
     QVBoxLayout *rightLayout = new QVBoxLayout(rightPanel);
     rightLayout->setSpacing(12);
     
-    // 编译器选项
-    QGroupBox *compilerGroup = new QGroupBox(tr("Compiler Options"), this);
+    // 修改编译器组的布局
+    QGroupBox *compilerGroup = new QGroupBox(tr("Compiler Settings"), this);
     QVBoxLayout *compilerLayout = new QVBoxLayout(compilerGroup);
     
-    // 编译工具选择
-    QHBoxLayout *compilerToolLayout = new QHBoxLayout();
-    compilerToolLayout->addWidget(new QLabel(tr("Compiler:")));
+    // 编译器选择
+    QHBoxLayout *compilerSelectLayout = new QHBoxLayout();
+    compilerSelectLayout->addWidget(new QLabel(tr("Compiler:")));
     compilerCombo = new QComboBox(this);
-    // 初始化编译器列表（根据默认的着色器语言）
-    if (languageCombo->currentText() == "HLSL") {
-        compilerCombo->addItems(QStringList() << "DXC" << "FXC" << "GLSLANG" << "SPIRV-CROSS");
-    } else {
-        compilerCombo->addItems(QStringList() << "GLSLANG" << "SPIRV-CROSS");
-    }
-    compilerToolLayout->addWidget(compilerCombo);
-    compilerLayout->addLayout(compilerToolLayout);
-    
-    // 更新输出类型的选项
-    connect(compilerCombo, &QComboBox::currentTextChanged, this, [this]() {
-        outputTypeCombo->clear();  // 清空当前输出类型
-        if (compilerCombo->currentText() == "DXC") {
-            outputTypeCombo->addItems(QStringList() << "HLSL" << "SPIR-V");
-        } else if (compilerCombo->currentText() == "FXC") {
-            outputTypeCombo->addItems(QStringList() << "DXBC");
-        } else if (compilerCombo->currentText() == "GLSLANG") {
-            outputTypeCombo->addItems(QStringList() << "SPIR-V");
-        } else if (compilerCombo->currentText() == "SPIRV-CROSS") {
-            outputTypeCombo->addItems(QStringList() << "HLSL" << "GLSL");
+    compilerCombo->addItems(QStringList() << "FXC" << "DXC" << "GLSLANG" << "SPIRV-CROSS");
+    compilerSelectLayout->addWidget(compilerCombo);
+    compilerLayout->addLayout(compilerSelectLayout);
+
+    // 更新着色器类型选项
+    connect(compilerCombo, &QComboBox::currentTextChanged, this, [this](const QString &compiler) {
+        shaderTypeCombo->clear();
+        
+        if (CompilerConfig::instance().hasCompiler(compiler)) {
+            const auto& capability = CompilerConfig::instance().getCapability(compiler);
+            shaderTypeCombo->addItems(capability.supportedShaderTypes);
+            
+            // 同时更新输出类型选项
+            outputTypeCombo->clear();
+            outputTypeCombo->addItems(capability.supportedOutputTypes);
+            
+            // 更新 Shader Model 选项
+            shaderModelCombo->clear();
+            shaderModelCombo->addItems(capability.supportedShaderModels);
         }
     });
     
@@ -238,21 +224,14 @@ void MainWindow::setupUI()
     QHBoxLayout *shaderTypeLayout = new QHBoxLayout();
     shaderTypeLayout->addWidget(new QLabel(tr("Shader Type:")));
     shaderTypeCombo = new QComboBox(this);
-    shaderTypeCombo->addItems(QStringList() 
-        << "Vertex" 
-        << "Pixel" 
-        << "Geometry" 
-        << "Compute" 
-        << "Hull" 
-        << "Domain"
-        << "RayGeneration"      // 光线生成着色器
-        << "Intersection"       // 相交着色器
-        << "AnyHit"            // 任意命中着色器
-        << "ClosestHit"        // 最近命中着色器
-        << "Miss"              // 未命中着色器
-        << "Callable"          // 可调用着色器
-        << "Mesh"              // 网格着色器
-    );
+    
+    // 根据当前编译器设置着色器类型选项
+    QString currentCompiler = compilerCombo->currentText();
+    if (CompilerConfig::instance().hasCompiler(currentCompiler)) {
+        const auto& capability = CompilerConfig::instance().getCapability(currentCompiler);
+        shaderTypeCombo->addItems(capability.supportedShaderTypes);
+    }
+    
     shaderTypeLayout->addWidget(shaderTypeCombo);
     compilerLayout->addLayout(shaderTypeLayout);
     
@@ -269,56 +248,38 @@ void MainWindow::setupUI()
     QHBoxLayout *shaderModelLayout = new QHBoxLayout();
     shaderModelLayout->addWidget(new QLabel(tr("Shader Model:")));
     shaderModelCombo = new QComboBox(this);
+    
+    // 根据当前编译器设置 Shader Model 选项
+    if (CompilerConfig::instance().hasCompiler(currentCompiler)) {
+        const auto& capability = CompilerConfig::instance().getCapability(currentCompiler);
+        shaderModelCombo->addItems(capability.supportedShaderModels);
+    }
+    
     shaderModelLayout->addWidget(shaderModelCombo);
     compilerLayout->addLayout(shaderModelLayout);
-
-    // 更新 Shader Model 选项
-    connect(compilerCombo, &QComboBox::currentTextChanged, this, [this]() {
-        shaderModelCombo->clear();  // 清空当前 Shader Model 选项
-        if (compilerCombo->currentText() == "FXC") {
-            shaderModelCombo->addItems(QStringList() 
-                << "5.0"
-                << "5.1"
-            );
-        } else {
-            shaderModelCombo->addItems(QStringList() 
-                << "5.0"
-                << "5.1"
-                << "6.0"
-                << "6.4"
-            );
-        }
-    });
-
-    // 初始化 Shader Model 选项
-    if (compilerCombo->currentText() == "FXC") {
-        shaderModelCombo->addItems(QStringList() 
-            << "5.0"
-            << "5.1"
-        );
-    } else {
-        shaderModelCombo->addItems(QStringList() 
-            << "5.0"
-            << "5.1"
-            << "6.0"
-            << "6.4"
-        );
-    }
     
     // 输出类型选择
     QHBoxLayout *outputTypeLayout = new QHBoxLayout();
     outputTypeLayout->addWidget(new QLabel(tr("Output Type:")));
     outputTypeCombo = new QComboBox(this);
-    // 根据默认编译器设置初始输出类型选项
-    if (compilerCombo->currentText() == "DXC") {
-        outputTypeCombo->addItems(QStringList() << "DXIL" << "SPIR-V");
-    } else if (compilerCombo->currentText() == "FXC") {
-        outputTypeCombo->addItems(QStringList() << "DXBC");
-    } else if (compilerCombo->currentText() == "GLSLANG") {
-        outputTypeCombo->addItems(QStringList() << "SPIR-V");
-    } else if (compilerCombo->currentText() == "SPIRV-CROSS") {
-        outputTypeCombo->addItems(QStringList() << "HLSL" << "GLSL");
+    
+    // 根据当前编译器设置输出类型选项
+    if (CompilerConfig::instance().hasCompiler(currentCompiler)) {
+        const auto& capability = CompilerConfig::instance().getCapability(currentCompiler);
+        // 添加安全检查
+        if (!capability.supportedOutputTypes.isEmpty()) {
+            qDebug() << "Adding output types for" << currentCompiler << ":" << capability.supportedOutputTypes;
+            auto supportedOutputTypes = capability.supportedOutputTypes;
+            outputTypeCombo->addItems(supportedOutputTypes);
+        } else {
+            qDebug() << "Warning: No output types available for" << currentCompiler;
+            outputTypeCombo->addItem("Default");  // 添加一个默认选项
+        }
+    } else {
+        qDebug() << "Warning: Compiler not found:" << currentCompiler;
+        outputTypeCombo->addItem("Default");  // 添加一个默认选项
     }
+    
     outputTypeLayout->addWidget(outputTypeCombo);
     compilerLayout->addLayout(outputTypeLayout);
 
@@ -333,49 +294,25 @@ void MainWindow::setupUI()
 
     // 连接构建按钮的点击信号
     connect(buildButton, &QPushButton::clicked, this, [this]() {
-        // 清空日志
-        logEdit->clear();
-        
-        // 1. 收集编译选项
-        QString compiler = compilerCombo->currentText();
-        QString shaderType = shaderTypeCombo->currentText();
-        QString entryPoint = entryPointEdit->text();
+        QString inputFile = filePathEdit->text();
         QString shaderModel = shaderModelCombo->currentText();
-        QString outputType = outputTypeCombo->currentText();
-
-        // 2. 验证输入
-        if (filePathEdit->text().isEmpty()) {
-            logEdit->setTextColor(Qt::red);
-            logEdit->append(tr("Error: Please select a shader file."));
-            return;
+        QString entryPoint = entryPointEdit->text();
+        QString shaderType = shaderTypeCombo->currentText();
+        
+        // 获取包含路径列表
+        QStringList includePaths;
+        for (int i = 0; i < includePathList->count(); ++i) {
+            includePaths << includePathList->item(i)->text();
+        }
+        
+        // 获取宏定义列表
+        QStringList macros;
+        for (int i = 0; i < macroList->count(); ++i) {
+            macros << macroList->item(i)->text();
         }
 
-        // 3. 构建编译命令
-        // TODO: 根据不同编译器构建具体的命令
-
-        // 4. 执行编译
-        // TODO: 实现异步编译过程
-        
-        // 5. 更新界面状态
-        buildButton->setEnabled(false);  // 禁用按钮直到编译完成
-        statusBar()->showMessage(tr("Building..."));  // 显示编译状态
-        
-        // 模拟编译过程（临时代码）
-        QTimer::singleShot(1000, this, [this]() {
-            // 编译成功示例
-            logEdit->setTextColor(Qt::green);
-            logEdit->append(tr("Build succeeded."));
-            
-            // 编译失败示例
-            /*
-            logEdit->setTextColor(Qt::red);
-            logEdit->append(tr("Error: Compilation failed."));
-            logEdit->append(tr("error X3000: syntax error: unexpected token 'void'"));
-            */
-            
-            buildButton->setEnabled(true);
-            statusBar()->clearMessage();
-        });
+        // 调用更新后的compile方法
+        compiler->compile(inputFile, shaderModel, entryPoint, shaderType, includePaths, macros);
     });
     
     rightLayout->addWidget(compilerGroup);
@@ -396,22 +333,56 @@ void MainWindow::setupUI()
     outputLayout->addWidget(line);
     
     // 日志面板
-    QHBoxLayout *logLayout = new QHBoxLayout();
-    logLayout->addWidget(new QLabel(tr("Log:")));
+    QHBoxLayout *logPanelLayout = new QHBoxLayout();  // 改名为logPanelLayout
+    logPanelLayout->addWidget(new QLabel(tr("Log:")));
     logEdit = new QTextEdit(this);
     logEdit->setReadOnly(true);  // 设置为只读
     logEdit->setMaximumHeight(100);  // 限制最大高度
     logEdit->setStyleSheet("QTextEdit { font-family: 'Consolas', monospace; }");  // 使用等宽字体
-    logLayout->addWidget(logEdit);
-    outputLayout->addLayout(logLayout);
+    logPanelLayout->addWidget(logEdit);
+    outputLayout->addLayout(logPanelLayout);
     
     rightLayout->addWidget(outputGroup);
     
-    contentLayout->addWidget(leftPanel, 1);
-    contentLayout->addWidget(rightPanel, 1);
+    // 添加日志输出区域
+    QGroupBox *logGroup = new QGroupBox(tr("Compilation Log"), this);
+    QVBoxLayout *logGroupLayout = new QVBoxLayout(logGroup);  // 改名为logGroupLayout
     
+    logEdit = new QTextEdit(this);
+    logEdit->setReadOnly(true);
+    logGroupLayout->addWidget(logEdit);
+    
+    rightLayout->addWidget(logGroup, 1);  // 添加拉伸因子1
+    
+    // 添加面板到主布局
+    contentLayout->addWidget(leftPanel);
+    contentLayout->addWidget(rightPanel);
+    
+    // 设置中心部件
     setCentralWidget(centralWidget);
-    resize(1200, 800);
+    
+    // 语言切换时更新编译器选项
+    connect(languageCombo, &QComboBox::currentTextChanged, this, [this](const QString &language) {
+        // 保存当前编译器选择
+        if (language == "HLSL") {
+            lastGLSLCompiler = compilerCombo->currentText();
+        } else {
+            lastHLSLCompiler = compilerCombo->currentText();
+        }
+
+        compilerCombo->clear();
+        if (LanguageConfig::instance().hasLanguage(language)) {
+            QStringList compilers = LanguageConfig::instance().getSupportedCompilers(language);
+            compilerCombo->addItems(compilers);
+            
+            // 恢复上次的编译器选择
+            QString lastCompiler = (language == "HLSL") ? lastHLSLCompiler : lastGLSLCompiler;
+            int index = compilerCombo->findText(lastCompiler);
+            if (index >= 0) {
+                compilerCombo->setCurrentIndex(index);
+            }
+        }
+    });
 }
 
 void MainWindow::createMenus()
@@ -867,7 +838,27 @@ void MainWindow::applyTheme(bool dark)
 
 MainWindow::~MainWindow()
 {
-    saveSettings();  // 保存当前设置
+    QSettings settings("config/settings.ini", QSettings::IniFormat);
+    
+    // 保存编译器选择
+    settings.setValue("lastHLSLCompiler", lastHLSLCompiler);
+    settings.setValue("lastGLSLCompiler", lastGLSLCompiler);
+    
+    // 保存当前编辑器内容
+    settings.setValue("inputContent", inputEdit->toPlainText());
+    settings.setValue("outputContent", outputEdit->toPlainText());
+    
+    // 保存编译设置
+    settings.setValue("entryPoint", entryPointEdit->text());
+    settings.setValue("shaderType", shaderTypeCombo->currentText());
+    settings.setValue("shaderModel", shaderModelCombo->currentText());
+    settings.setValue("outputType", outputTypeCombo->currentText());
+    
+    // 保存最后打开的目录
+    settings.setValue("lastOpenDir", lastOpenDir);
+    
+    // 保存主题设置
+    settings.setValue("isDarkTheme", isDarkTheme);
 }
 
 QString MainWindow::settingsFilePath() const
@@ -913,10 +904,13 @@ void MainWindow::saveSettings()
     settings.setValue("inputContent", inputEdit->toPlainText());
     settings.setValue("outputContent", outputEdit->toPlainText());
     
-    // 保存编译器选择
+    // 保存编译器选项
+    settings.setValue("compiler", compilerCombo->currentText());
     settings.setValue("lastHLSLCompiler", lastHLSLCompiler);
     settings.setValue("lastGLSLCompiler", lastGLSLCompiler);
-    settings.setValue("lastOpenDir", lastOpenDir);  // 保存目录
+    
+    // 保存最后打开的目录
+    settings.setValue("lastOpenDir", lastOpenDir);
 }
 
 void MainWindow::loadSettings()
@@ -967,21 +961,21 @@ void MainWindow::loadSettings()
     
     outputEdit->setText(settings.value("outputContent").toString());
     
+    // 加载编译器选项
+    QString compiler = settings.value("compiler").toString();
+    if (!compiler.isEmpty()) {
+        compilerCombo->setCurrentText(compiler);
+    }
+    
     // 加载编译器选择
     lastHLSLCompiler = settings.value("lastHLSLCompiler", "DXC").toString();
     lastGLSLCompiler = settings.value("lastGLSLCompiler", "GLSLANG").toString();
     
     // 根据当前语言设置对应的编译器
     if (languageCombo->currentText() == "HLSL") {
-        int index = compilerCombo->findText(lastHLSLCompiler);
-        if (index >= 0) {
-            compilerCombo->setCurrentIndex(index);
-        }
+        compilerCombo->setCurrentText(lastHLSLCompiler);
     } else {
-        int index = compilerCombo->findText(lastGLSLCompiler);
-        if (index >= 0) {
-            compilerCombo->setCurrentIndex(index);
-        }
+        compilerCombo->setCurrentText(lastGLSLCompiler);
     }
     
     // 加载入口点
