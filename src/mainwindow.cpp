@@ -220,6 +220,20 @@ void MainWindow::setupUI()
     compilerToolLayout->addWidget(compilerCombo);
     compilerLayout->addLayout(compilerToolLayout);
     
+    // 更新输出类型的选项
+    connect(compilerCombo, &QComboBox::currentTextChanged, this, [this]() {
+        outputTypeCombo->clear();  // 清空当前输出类型
+        if (compilerCombo->currentText() == "DXC") {
+            outputTypeCombo->addItems(QStringList() << "HLSL" << "SPIR-V");
+        } else if (compilerCombo->currentText() == "FXC") {
+            outputTypeCombo->addItems(QStringList() << "DXBC");
+        } else if (compilerCombo->currentText() == "GLSLANG") {
+            outputTypeCombo->addItems(QStringList() << "SPIR-V");
+        } else if (compilerCombo->currentText() == "SPIRV-CROSS") {
+            outputTypeCombo->addItems(QStringList() << "HLSL" << "GLSL");
+        }
+    });
+    
     // Shader类型选择
     QHBoxLayout *shaderTypeLayout = new QHBoxLayout();
     shaderTypeLayout->addWidget(new QLabel(tr("Shader Type:")));
@@ -255,14 +269,41 @@ void MainWindow::setupUI()
     QHBoxLayout *shaderModelLayout = new QHBoxLayout();
     shaderModelLayout->addWidget(new QLabel(tr("Shader Model:")));
     shaderModelCombo = new QComboBox(this);
-    shaderModelCombo->addItems(QStringList() 
-        << "5.0"
-        << "5.1"
-        << "6.0"
-        << "6.4"
-    );
     shaderModelLayout->addWidget(shaderModelCombo);
     compilerLayout->addLayout(shaderModelLayout);
+
+    // 更新 Shader Model 选项
+    connect(compilerCombo, &QComboBox::currentTextChanged, this, [this]() {
+        shaderModelCombo->clear();  // 清空当前 Shader Model 选项
+        if (compilerCombo->currentText() == "FXC") {
+            shaderModelCombo->addItems(QStringList() 
+                << "5.0"
+                << "5.1"
+            );
+        } else {
+            shaderModelCombo->addItems(QStringList() 
+                << "5.0"
+                << "5.1"
+                << "6.0"
+                << "6.4"
+            );
+        }
+    });
+
+    // 初始化 Shader Model 选项
+    if (compilerCombo->currentText() == "FXC") {
+        shaderModelCombo->addItems(QStringList() 
+            << "5.0"
+            << "5.1"
+        );
+    } else {
+        shaderModelCombo->addItems(QStringList() 
+            << "5.0"
+            << "5.1"
+            << "6.0"
+            << "6.4"
+        );
+    }
     
     // 输出类型选择
     QHBoxLayout *outputTypeLayout = new QHBoxLayout();
