@@ -41,6 +41,8 @@ add_executable(ShaderCompiler
     src/mainwindow.h
     src/fxcCompiler.cpp
     src/fxcCompiler.h
+    src/dxcCompiler.cpp
+    src/dxcCompiler.h
     src/compilerConfig.h
     src/compilerConfig.cpp
     src/languageConfig.h
