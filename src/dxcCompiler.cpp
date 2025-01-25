@@ -2,8 +2,10 @@
 #include <QProcess>
 #include <QDebug>
 
+// 构造函数，初始化 dxcCompiler。
 dxcCompiler::dxcCompiler(QObject *parent) : QObject(parent) {}
 
+// 编译方法，执行编译操作。
 void dxcCompiler::compile(const QString &inputFile, 
                           const QString &shaderModel, 
                           const QString &entryPoint,
@@ -29,12 +31,12 @@ void dxcCompiler::compile(const QString &inputFile,
         
         // 如果 error 非空，将其输出为警告信息
         if (!error.isEmpty()) {
-            // 这里假设有一个 logEdit 用于显示输出信息
             emit compilationWarning(error);  // 直接发出警告信号
         }
     }
 }
 
+// 构建编译命令的方法
 QString dxcCompiler::buildCommand(const QString &inputFile, 
                                    const QString &shaderModel, 
                                    const QString &entryPoint,

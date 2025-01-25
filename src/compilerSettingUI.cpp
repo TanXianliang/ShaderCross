@@ -1,6 +1,7 @@
 #include "compilerSettingUI.h"
 #include <QDebug>
 
+// 构造函数，初始化编译器设置 UI。
 CompilerSettingUI::CompilerSettingUI(QWidget *parent)
     : QWidget(parent)
 {
@@ -8,6 +9,7 @@ CompilerSettingUI::CompilerSettingUI(QWidget *parent)
     setupConnections();
 }
 
+// 设置 UI 组件
 void CompilerSettingUI::setupUI()
 {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -57,6 +59,7 @@ void CompilerSettingUI::setupUI()
     mainLayout->addWidget(compilerGroup);
 }
 
+// 设置信号连接
 void CompilerSettingUI::setupConnections()
 {
     connect(compilerCombo, &QComboBox::currentTextChanged, 
@@ -119,6 +122,7 @@ void CompilerSettingUI::setOutputType(const QString &type)
     outputTypeCombo->setCurrentText(type);
 }
 
+// 更新编译器设置
 void CompilerSettingUI::updateCompilerSettings(const QString &compiler)
 {
     shaderTypeCombo->clear();
@@ -133,6 +137,7 @@ void CompilerSettingUI::updateCompilerSettings(const QString &compiler)
     }
 }
 
+// 响应语言变化
 void CompilerSettingUI::onLanguageChanged(const QString &language)
 {
     compilerCombo->clear();
