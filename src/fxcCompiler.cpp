@@ -5,11 +5,11 @@
 fxcCompiler::fxcCompiler(QObject *parent) : QObject(parent) {}
 
 void fxcCompiler::compile(const QString &inputFile, 
-                         const QString &shaderModel, 
-                         const QString &entryPoint,
-                         const QString &shaderType,
-                         const QStringList &includePaths,
-                         const QStringList &macros) 
+                          const QString &shaderModel, 
+                          const QString &entryPoint,
+                          const QString &shaderType,
+                          const QStringList &includePaths,
+                          const QStringList &macros) 
 {
     QString command = buildCommand(inputFile, shaderModel, entryPoint, shaderType, includePaths, macros);
     
@@ -20,19 +20,25 @@ void fxcCompiler::compile(const QString &inputFile,
     QString output = process.readAllStandardOutput();
     QString error = process.readAllStandardError();
 
-    if (error.isEmpty()) {
-        emit compilationFinished(output);
+    // 判断编译是否成功
+    if (output.isEmpty()) {
+        emit compilationError(error.isEmpty() ? "Compilation failed with no output." : error);
     } else {
-        emit compilationError(error);
+        emit compilationFinished(output);
+        
+        // 如果 error 非空，将其输出到日志窗口
+        if (!error.isEmpty()) {
+            qDebug() << "Warning: " << error;  // 或者使用其他日志记录方式
+        }
     }
 }
 
 QString fxcCompiler::buildCommand(const QString &inputFile, 
-                                const QString &shaderModel, 
-                                const QString &entryPoint,
-                                const QString &shaderType,
-                                const QStringList &includePaths,
-                                const QStringList &macros) 
+                                   const QString &shaderModel, 
+                                   const QString &entryPoint,
+                                   const QString &shaderType,
+                                   const QStringList &includePaths,
+                                   const QStringList &macros) 
 {
     // 检查着色器类型是否支持
     QStringList supportedTypes = {"Vertex", "Pixel", "Geometry", "Hull", "Domain", "Compute"};

@@ -21,10 +21,15 @@ void dxcCompiler::compile(const QString &inputFile,
     QString output = process.readAllStandardOutput();
     QString error = process.readAllStandardError();
 
-    if (error.isEmpty()) {
-        emit compilationFinished(output);
+    if (output.isEmpty()) {
+        emit compilationError(error.isEmpty() ? "Compilation failed with no output." : error);
     } else {
-        emit compilationError(error);
+        emit compilationFinished(output);
+        
+        // 如果 error 非空，将其输出到日志窗口
+        if (!error.isEmpty()) {
+            qDebug() << "Warning: " << error;  // 或者使用其他日志记录方式
+        }
     }
 }
 
@@ -59,6 +64,8 @@ QString dxcCompiler::buildCommand(const QString &inputFile,
     if (outputType == "SPIR-V") {
         command += " -spirv";
     }
+
+    command += " -HV 2016";
     
     // 添加包含路径
     for (const QString &path : includePaths) {
