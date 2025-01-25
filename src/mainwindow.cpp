@@ -26,6 +26,7 @@
 #include "compilerConfig.h"
 #include <QDebug>
 #include "languageConfig.h"
+#include "compilerSettingUI.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -47,14 +48,28 @@ MainWindow::MainWindow(QWidget *parent)
     applyTheme(isDarkTheme);
     loadSettings();  // 加载上次的设置
 
+    // 连接编译器信号
     connect(compiler, &fxcCompiler::compilationFinished, this, [this](const QString &output) {
+        outputEdit->setTextColor(Qt::green);
+        outputEdit->append(tr("Compilation succeeded:\n") + output);
         logEdit->setTextColor(Qt::green);
-        logEdit->append(tr("Compilation succeeded:\n") + output);
+        logEdit->append(tr("Compilation succeeded"));
     });
 
     connect(compiler, &fxcCompiler::compilationError, this, [this](const QString &error) {
+        outputEdit->setTextColor(Qt::red);
+        outputEdit->append(tr("Compilation error:\n") + error);
         logEdit->setTextColor(Qt::red);
-        logEdit->append(tr("Compilation error:\n") + error);
+        logEdit->append(tr("Compilation failed"));
+    });
+
+    // 连接编译器设置变更信号
+    connect(compilerSettingUI, &CompilerSettingUI::compilerChanged, this, [this](const QString &compiler) {
+        if (languageCombo->currentText() == "HLSL") {
+            lastHLSLCompiler = compiler;
+        } else {
+            lastGLSLCompiler = compiler;
+        }
     });
 }
 
@@ -190,155 +205,43 @@ void MainWindow::setupUI()
     QVBoxLayout *rightLayout = new QVBoxLayout(rightPanel);
     rightLayout->setSpacing(12);
     
-    // 修改编译器组的布局
-    QGroupBox *compilerGroup = new QGroupBox(tr("Compiler Settings"), this);
-    QVBoxLayout *compilerLayout = new QVBoxLayout(compilerGroup);
-    
-    // 编译器选择
-    QHBoxLayout *compilerSelectLayout = new QHBoxLayout();
-    compilerSelectLayout->addWidget(new QLabel(tr("Compiler:")));
-    compilerCombo = new QComboBox(this);
-    compilerCombo->addItems(QStringList() << "FXC" << "DXC" << "GLSLANG" << "SPIRV-CROSS");
-    compilerSelectLayout->addWidget(compilerCombo);
-    compilerLayout->addLayout(compilerSelectLayout);
+    // 使用新的编译器设置UI
+    compilerSettingUI = new CompilerSettingUI(this);
+    rightLayout->addWidget(compilerSettingUI);
 
-    // 更新着色器类型选项
-    connect(compilerCombo, &QComboBox::currentTextChanged, this, [this](const QString &compiler) {
-        shaderTypeCombo->clear();
-        
-        if (CompilerConfig::instance().hasCompiler(compiler)) {
-            const auto& capability = CompilerConfig::instance().getCapability(compiler);
-            shaderTypeCombo->addItems(capability.supportedShaderTypes);
-            
-            // 同时更新输出类型选项
-            outputTypeCombo->clear();
-            outputTypeCombo->addItems(capability.supportedOutputTypes);
-            
-            // 更新 Shader Model 选项
-            shaderModelCombo->clear();
-            shaderModelCombo->addItems(capability.supportedShaderModels);
-        }
-    });
-    
-    // Shader类型选择
-    QHBoxLayout *shaderTypeLayout = new QHBoxLayout();
-    shaderTypeLayout->addWidget(new QLabel(tr("Shader Type:")));
-    shaderTypeCombo = new QComboBox(this);
-    
-    // 根据当前编译器设置着色器类型选项
-    QString currentCompiler = compilerCombo->currentText();
-    if (CompilerConfig::instance().hasCompiler(currentCompiler)) {
-        const auto& capability = CompilerConfig::instance().getCapability(currentCompiler);
-        shaderTypeCombo->addItems(capability.supportedShaderTypes);
-    }
-    
-    shaderTypeLayout->addWidget(shaderTypeCombo);
-    compilerLayout->addLayout(shaderTypeLayout);
-    
-    // 入口点设置
-    QHBoxLayout *entryPointLayout = new QHBoxLayout();
-    entryPointLayout->addWidget(new QLabel(tr("Entry Point:")));
-    entryPointEdit = new QLineEdit(this);
-    entryPointEdit->setPlaceholderText(tr("main"));
-    entryPointEdit->setText("main");
-    entryPointLayout->addWidget(entryPointEdit);
-    compilerLayout->addLayout(entryPointLayout);
-    
-    // Shader Model选择
-    QHBoxLayout *shaderModelLayout = new QHBoxLayout();
-    shaderModelLayout->addWidget(new QLabel(tr("Shader Model:")));
-    shaderModelCombo = new QComboBox(this);
-    
-    // 根据当前编译器设置 Shader Model 选项
-    if (CompilerConfig::instance().hasCompiler(currentCompiler)) {
-        const auto& capability = CompilerConfig::instance().getCapability(currentCompiler);
-        shaderModelCombo->addItems(capability.supportedShaderModels);
-    }
-    
-    shaderModelLayout->addWidget(shaderModelCombo);
-    compilerLayout->addLayout(shaderModelLayout);
-    
-    // 输出类型选择
-    QHBoxLayout *outputTypeLayout = new QHBoxLayout();
-    outputTypeLayout->addWidget(new QLabel(tr("Output Type:")));
-    outputTypeCombo = new QComboBox(this);
-    
-    // 根据当前编译器设置输出类型选项
-    if (CompilerConfig::instance().hasCompiler(currentCompiler)) {
-        const auto& capability = CompilerConfig::instance().getCapability(currentCompiler);
-        // 添加安全检查
-        if (!capability.supportedOutputTypes.isEmpty()) {
-            qDebug() << "Adding output types for" << currentCompiler << ":" << capability.supportedOutputTypes;
-            auto supportedOutputTypes = capability.supportedOutputTypes;
-            outputTypeCombo->addItems(supportedOutputTypes);
+    // 连接语言切换信号
+    connect(languageCombo, &QComboBox::currentTextChanged, this, [this](const QString &language) {
+        // 更新编译器设置
+        compilerSettingUI->onLanguageChanged(language);
+
+        // 保存当前编译器选择
+        QString currentCompiler = compilerSettingUI->getCurrentCompiler();
+        if (language == "HLSL") {
+            lastGLSLCompiler = currentCompiler;
         } else {
-            qDebug() << "Warning: No output types available for" << currentCompiler;
-            outputTypeCombo->addItem("Default");  // 添加一个默认选项
+            lastHLSLCompiler = currentCompiler;
         }
-    } else {
-        qDebug() << "Warning: Compiler not found:" << currentCompiler;
-        outputTypeCombo->addItem("Default");  // 添加一个默认选项
-    }
-    
-    outputTypeLayout->addWidget(outputTypeCombo);
-    compilerLayout->addLayout(outputTypeLayout);
-
-    // 添加构建按钮
-    QHBoxLayout *buildLayout = new QHBoxLayout();
-    buildLayout->addStretch();  // 添加弹性空间，使按钮靠右对齐
-    buildButton = new QPushButton(tr("Build"), this);
-    buildButton->setObjectName("buildButton");  // 设置对象名，用于样式表定位
-    buildButton->setFixedWidth(100);
-    buildLayout->addWidget(buildButton);
-    compilerLayout->addLayout(buildLayout);
-
-    // 连接构建按钮的点击信号
-    connect(buildButton, &QPushButton::clicked, this, [this]() {
-        QString inputFile = filePathEdit->text();
-        QString shaderModel = shaderModelCombo->currentText();
-        QString entryPoint = entryPointEdit->text();
-        QString shaderType = shaderTypeCombo->currentText();
-        
-        // 获取包含路径列表
-        QStringList includePaths;
-        for (int i = 0; i < includePathList->count(); ++i) {
-            includePaths << includePathList->item(i)->text();
-        }
-        
-        // 获取宏定义列表
-        QStringList macros;
-        for (int i = 0; i < macroList->count(); ++i) {
-            macros << macroList->item(i)->text();
-        }
-
-        // 调用更新后的compile方法
-        compiler->compile(inputFile, shaderModel, entryPoint, shaderType, includePaths, macros);
     });
-    
-    rightLayout->addWidget(compilerGroup);
-    
+
+    // 连接编译按钮信号
+    connect(compilerSettingUI, &CompilerSettingUI::buildClicked, this, &MainWindow::onCompile);
+
     // Output area
     QGroupBox *outputGroup = new QGroupBox(tr("Output"), this);
     QVBoxLayout *outputLayout = new QVBoxLayout(outputGroup);
     
     // 编译输出
     outputEdit = new QTextEdit(this);
-    outputEdit->setReadOnly(true);  // 设置为只读
+    outputEdit->setReadOnly(true);
     outputLayout->addWidget(outputEdit);
-    
-    // 添加分隔线
-    QFrame *line = new QFrame(this);
-    line->setFrameShape(QFrame::HLine);
-    line->setFrameShadow(QFrame::Sunken);
-    outputLayout->addWidget(line);
     
     // 日志面板
     QHBoxLayout *logPanelLayout = new QHBoxLayout();
     logPanelLayout->addWidget(new QLabel(tr("Log:")));
     logEdit = new QTextEdit(this);
-    logEdit->setReadOnly(true);  // 设置为只读
-    logEdit->setMaximumHeight(100);  // 限制最大高度
-    logEdit->setStyleSheet("QTextEdit { font-family: 'Consolas', monospace; }");  // 使用等宽字体
+    logEdit->setReadOnly(true);
+    logEdit->setMaximumHeight(100);
+    logEdit->setStyleSheet("QTextEdit { font-family: 'Consolas', monospace; }");
     logPanelLayout->addWidget(logEdit);
     outputLayout->addLayout(logPanelLayout);
     
@@ -350,29 +253,6 @@ void MainWindow::setupUI()
     
     // 设置中心部件
     setCentralWidget(centralWidget);
-    
-    // 语言切换时更新编译器选项
-    connect(languageCombo, &QComboBox::currentTextChanged, this, [this](const QString &language) {
-        // 保存当前编译器选择
-        if (language == "HLSL") {
-            lastGLSLCompiler = compilerCombo->currentText();
-        } else {
-            lastHLSLCompiler = compilerCombo->currentText();
-        }
-
-        compilerCombo->clear();
-        if (LanguageConfig::instance().hasLanguage(language)) {
-            QStringList compilers = LanguageConfig::instance().getSupportedCompilers(language);
-            compilerCombo->addItems(compilers);
-            
-            // 恢复上次的编译器选择
-            QString lastCompiler = (language == "HLSL") ? lastHLSLCompiler : lastGLSLCompiler;
-            int index = compilerCombo->findText(lastCompiler);
-            if (index >= 0) {
-                compilerCombo->setCurrentIndex(index);
-            }
-        }
-    });
 }
 
 void MainWindow::createMenus()
@@ -430,7 +310,25 @@ void MainWindow::onBrowseFile()
 
 void MainWindow::onCompile()
 {
-    QMessageBox::information(this, tr("Notice"), tr("Compilation not implemented yet"));
+    QString inputFile = filePathEdit->text();
+    QString shaderModel = compilerSettingUI->getShaderModel();
+    QString entryPoint = compilerSettingUI->getEntryPoint();
+    QString shaderType = compilerSettingUI->getShaderType();
+    
+    // 获取包含路径列表
+    QStringList includePaths;
+    for (int i = 0; i < includePathList->count(); ++i) {
+        includePaths << includePathList->item(i)->text();
+    }
+    
+    // 获取宏定义列表
+    QStringList macros;
+    for (int i = 0; i < macroList->count(); ++i) {
+        macros << macroList->item(i)->text();
+    }
+
+    // 调用编译器
+    compiler->compile(inputFile, shaderModel, entryPoint, shaderType, includePaths, macros);
 }
 
 void MainWindow::onSaveResult()
@@ -839,10 +737,10 @@ MainWindow::~MainWindow()
     settings.setValue("outputContent", outputEdit->toPlainText());
     
     // 保存编译设置
-    settings.setValue("entryPoint", entryPointEdit->text());
-    settings.setValue("shaderType", shaderTypeCombo->currentText());
-    settings.setValue("shaderModel", shaderModelCombo->currentText());
-    settings.setValue("outputType", outputTypeCombo->currentText());
+    settings.setValue("entryPoint", compilerSettingUI->getEntryPoint());
+    settings.setValue("shaderType", compilerSettingUI->getShaderType());
+    settings.setValue("shaderModel", compilerSettingUI->getShaderModel());
+    settings.setValue("outputType", compilerSettingUI->getOutputType());
     
     // 保存最后打开的目录
     settings.setValue("lastOpenDir", lastOpenDir);
@@ -871,31 +769,32 @@ void MainWindow::saveSettings()
     settings.setValue("shaderLanguage", languageCombo->currentText());
     settings.setValue("filePath", filePathEdit->text());
     settings.setValue("encoding", encodingCombo->currentText());
-    settings.setValue("entryPoint", entryPointEdit->text());
-    settings.setValue("shaderType", shaderTypeCombo->currentText());
-    settings.setValue("shaderModel", shaderModelCombo->currentText());
-    settings.setValue("outputType", outputTypeCombo->currentText());
     
-    // 保存包含路径
+    // 保存编译器设置
+    settings.setValue("compiler", compilerSettingUI->getCurrentCompiler());
+    settings.setValue("entryPoint", compilerSettingUI->getEntryPoint());
+    settings.setValue("shaderType", compilerSettingUI->getShaderType());
+    settings.setValue("shaderModel", compilerSettingUI->getShaderModel());
+    settings.setValue("outputType", compilerSettingUI->getOutputType());
+    
+    // 保存包含路径和宏定义
     QStringList includePaths;
     for (int i = 0; i < includePathList->count(); ++i) {
         includePaths << includePathList->item(i)->text();
     }
     settings.setValue("includePaths", includePaths);
     
-    // 保存宏定义
     QStringList macros;
     for (int i = 0; i < macroList->count(); ++i) {
         macros << macroList->item(i)->text();
     }
     settings.setValue("macros", macros);
     
-    // 保存文件内容
+    // 保存编辑器内容
     settings.setValue("inputContent", inputEdit->toPlainText());
     settings.setValue("outputContent", outputEdit->toPlainText());
     
-    // 保存编译器选项
-    settings.setValue("compiler", compilerCombo->currentText());
+    // 保存编译器历史记录
     settings.setValue("lastHLSLCompiler", lastHLSLCompiler);
     settings.setValue("lastGLSLCompiler", lastGLSLCompiler);
     
@@ -917,6 +816,7 @@ void MainWindow::loadSettings()
         applyTheme(isDarkTheme);
     }
     
+    // 恢复语言和编码设置
     QString lang = settings.value("shaderLanguage").toString();
     if (!lang.isEmpty()) {
         languageCombo->setCurrentText(lang);
@@ -927,12 +827,11 @@ void MainWindow::loadSettings()
         encodingCombo->setCurrentText(encoding);
     }
     
-    // 恢复包含路径
+    // 恢复包含路径和宏定义
     QStringList includePaths = settings.value("includePaths").toStringList();
     includePathList->clear();
     includePathList->addItems(includePaths);
     
-    // 恢复宏定义
     QStringList macros = settings.value("macros").toStringList();
     macroList->clear();
     macroList->addItems(macros);
@@ -944,47 +843,38 @@ void MainWindow::loadSettings()
         if (QFile::exists(filePath)) {
             loadFileContent(filePath);
         } else {
-            // 如果文件不存在，使用保存的内容
             inputEdit->setText(settings.value("inputContent").toString());
         }
     }
     
     outputEdit->setText(settings.value("outputContent").toString());
     
-    // 加载编译器选项
-    QString compiler = settings.value("compiler").toString();
-    if (!compiler.isEmpty()) {
-        compilerCombo->setCurrentText(compiler);
-    }
-    
-    // 加载编译器选择
+    // 恢复编译器历史记录
     lastHLSLCompiler = settings.value("lastHLSLCompiler", "DXC").toString();
     lastGLSLCompiler = settings.value("lastGLSLCompiler", "GLSLANG").toString();
     
-    // 根据当前语言设置对应的编译器
-    if (languageCombo->currentText() == "HLSL") {
-        compilerCombo->setCurrentText(lastHLSLCompiler);
-    } else {
-        compilerCombo->setCurrentText(lastGLSLCompiler);
+    // 根据当前语言更新编译器设置
+    compilerSettingUI->onLanguageChanged(languageCombo->currentText());
+    
+    // 恢复编译器设置
+    QString compiler = settings.value("compiler").toString();
+    if (!compiler.isEmpty()) {
+        compilerSettingUI->setCurrentCompiler(compiler);
     }
     
-    // 加载入口点
     QString entryPoint = settings.value("entryPoint", "main").toString();
-    entryPointEdit->setText(entryPoint);
+    compilerSettingUI->setEntryPoint(entryPoint);
     
-    // 加载shader类型
     QString shaderType = settings.value("shaderType", "Vertex").toString();
-    shaderTypeCombo->setCurrentText(shaderType);
+    compilerSettingUI->setShaderType(shaderType);
     
-    // 加载shader模型
     QString shaderModel = settings.value("shaderModel", "5.0").toString();
-    shaderModelCombo->setCurrentText(shaderModel);
+    compilerSettingUI->setShaderModel(shaderModel);
     
-    // 加载输出类型
     QString outputType = settings.value("outputType", "DXIL").toString();
-    outputTypeCombo->setCurrentText(outputType);
+    compilerSettingUI->setOutputType(outputType);
     
-    lastOpenDir = settings.value("lastOpenDir", QDir::currentPath()).toString();  // 加载目录
+    lastOpenDir = settings.value("lastOpenDir", QDir::currentPath()).toString();
 }
 
 void MainWindow::updateIncludeListHeight()
