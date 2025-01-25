@@ -21,14 +21,16 @@ void dxcCompiler::compile(const QString &inputFile,
     QString output = process.readAllStandardOutput();
     QString error = process.readAllStandardError();
 
+    // 判断编译是否成功
     if (output.isEmpty()) {
         emit compilationError(error.isEmpty() ? "Compilation failed with no output." : error);
     } else {
         emit compilationFinished(output);
         
-        // 如果 error 非空，将其输出到日志窗口
+        // 如果 error 非空，将其输出为警告信息
         if (!error.isEmpty()) {
-            qDebug() << "Warning: " << error;  // 或者使用其他日志记录方式
+            // 这里假设有一个 logEdit 用于显示输出信息
+            emit compilationWarning(error);  // 直接发出警告信号
         }
     }
 }

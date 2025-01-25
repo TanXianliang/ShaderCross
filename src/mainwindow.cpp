@@ -353,6 +353,11 @@ void MainWindow::onCompile()
             logEdit->append(tr("Compilation failed"));
         });
 
+        connect(dxcCompilerInstance, &dxcCompiler::compilationWarning, this, [this](const QString &warning) {
+            logEdit->setTextColor(Qt::yellow);  // 设置字体颜色为黄色
+            logEdit->append(tr("Warning: ") + warning);
+        });
+
         // 调用 dxcCompiler 进行编译
         dxcCompilerInstance->compile(inputFile, shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
     } else {

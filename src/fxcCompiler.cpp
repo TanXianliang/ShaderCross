@@ -26,9 +26,9 @@ void fxcCompiler::compile(const QString &inputFile,
     } else {
         emit compilationFinished(output);
         
-        // 如果 error 非空，将其输出到日志窗口
+        // 如果 error 非空，将其输出到输出窗口
         if (!error.isEmpty()) {
-            qDebug() << "Warning: " << error;  // 或者使用其他日志记录方式
+            emit compilationError(error);  // 直接发出错误信号
         }
     }
 }

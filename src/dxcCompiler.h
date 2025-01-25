@@ -21,6 +21,7 @@ public:
 signals:
     void compilationFinished(const QString &output);
     void compilationError(const QString &error);
+    void compilationWarning(const QString &warning);
 
 private:
     QString buildCommand(const QString &inputFile, 
