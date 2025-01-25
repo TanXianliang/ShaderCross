@@ -31,7 +31,7 @@ MainWindow::MainWindow(QWidget *parent)
     , lastOpenDir(QDir::currentPath())  // 初始化为当前目录
 {
     // 设置程序图标
-    setWindowIcon(QIcon(":/resources/icons/icons/icon.jpg"));
+    setWindowIcon(QIcon(":/resources/icons.jpg"));
     
     // 设置窗口标题
     setWindowTitle("ShaderCross");

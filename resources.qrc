@@ -1,6 +1,5 @@
-<!DOCTYPE RCC>
-<RCC version="1.0">
-    <qresource prefix="/icons">
+<RCC>
+    <qresource prefix="/">
         <file>resources/icons/down-arrow-white.svg</file>
         <file>resources/icons/down-arrow-black.svg</file>
         <file>resources/icons/add.svg</file>
@@ -9,4 +8,4 @@
         <file>resources/icons/compile.svg</file>
         <file>resources/icons/icon.jpg</file>
     </qresource>
-</RCC> 
+</RCC>
