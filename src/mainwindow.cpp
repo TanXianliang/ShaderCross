@@ -27,6 +27,7 @@
 #include <QDebug>
 #include "languageConfig.h"
 #include "compilerSettingUI.h"
+#include "dxcCompiler.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -70,6 +71,8 @@ MainWindow::MainWindow(QWidget *parent)
         } else {
             lastGLSLCompiler = compiler;
         }
+        // 更新当前编译器设置
+        updateCurrentCompilerSettings(compiler);
     });
 }
 
@@ -318,6 +321,7 @@ void MainWindow::onCompile()
     QString shaderModel = compilerSettingUI->getShaderModel();
     QString entryPoint = compilerSettingUI->getEntryPoint();
     QString shaderType = compilerSettingUI->getShaderType();
+    QString outputType = compilerSettingUI->getOutputType();  // 获取输出类型
     
     // 获取包含路径列表
     QStringList includePaths;
@@ -331,8 +335,30 @@ void MainWindow::onCompile()
         macros << macroList->item(i)->text();
     }
 
-    // 调用编译器
-    compiler->compile(inputFile, shaderModel, entryPoint, shaderType, includePaths, macros);
+    // 根据选择的编译器类型进行编译
+    QString currentCompiler = compilerSettingUI->getCurrentCompiler();
+    if (currentCompiler == "DXC") {
+        dxcCompiler *dxcCompilerInstance = new dxcCompiler(this);
+        connect(dxcCompilerInstance, &dxcCompiler::compilationFinished, this, [this](const QString &output) {
+            outputEdit->setTextColor(Qt::green);
+            outputEdit->append(tr("Compilation succeeded:\n") + output);
+            logEdit->setTextColor(Qt::green);
+            logEdit->append(tr("Compilation succeeded"));
+        });
+
+        connect(dxcCompilerInstance, &dxcCompiler::compilationError, this, [this](const QString &error) {
+            outputEdit->setTextColor(Qt::red);
+            outputEdit->append(tr("Compilation error:\n") + error);
+            logEdit->setTextColor(Qt::red);
+            logEdit->append(tr("Compilation failed"));
+        });
+
+        // 调用 dxcCompiler 进行编译
+        dxcCompilerInstance->compile(inputFile, shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
+    } else {
+        // 处理其他编译器（如 FXC）
+        compiler->compile(inputFile, shaderModel, entryPoint, shaderType, includePaths, macros);
+    }
 }
 
 void MainWindow::onSaveResult()
@@ -730,27 +756,7 @@ void MainWindow::applyTheme(bool dark)
 
 MainWindow::~MainWindow()
 {
-    QSettings settings("config/settings.ini", QSettings::IniFormat);
-    
-    // 保存编译器选择
-    settings.setValue("lastHLSLCompiler", lastHLSLCompiler);
-    settings.setValue("lastGLSLCompiler", lastGLSLCompiler);
-    
-    // 保存当前编辑器内容
-    settings.setValue("inputContent", inputEdit->toPlainText());
-    settings.setValue("outputContent", outputEdit->toPlainText());
-    
-    // 保存编译设置
-    settings.setValue("entryPoint", compilerSettingUI->getEntryPoint());
-    settings.setValue("shaderType", compilerSettingUI->getShaderType());
-    settings.setValue("shaderModel", compilerSettingUI->getShaderModel());
-    settings.setValue("outputType", compilerSettingUI->getOutputType());
-    
-    // 保存最后打开的目录
-    settings.setValue("lastOpenDir", lastOpenDir);
-    
-    // 保存主题设置
-    settings.setValue("isDarkTheme", isDarkTheme);
+    onSaveSettings();  // 在析构时保存设置
 }
 
 QString MainWindow::settingsFilePath() const
@@ -759,16 +765,22 @@ QString MainWindow::settingsFilePath() const
     QString exePath = QCoreApplication::applicationDirPath();
     QString configPath = exePath + "/config";
     QDir().mkpath(configPath);  // 确保config目录存在
-    return configPath + "/settings.ini";
+    return configPath + "/settings.ini";  // 返回完整的配置文件路径
 }
 
 void MainWindow::saveSettings()
 {
     QSettings settings(settingsFilePath(), QSettings::IniFormat);
     
-    // 保存基本设置
+    // 保存窗口几何形状
     settings.setValue("geometry", saveGeometry());
     settings.setValue("windowState", saveState());
+    
+    // 保存窗口位置和大小
+    settings.setValue("windowSize", size());
+    settings.setValue("windowPosition", pos());
+    
+    // 保存其他设置
     settings.setValue("isDarkTheme", isDarkTheme);
     settings.setValue("shaderLanguage", languageCombo->currentText());
     settings.setValue("filePath", filePathEdit->text());
@@ -810,56 +822,19 @@ void MainWindow::loadSettings()
 {
     QSettings settings(settingsFilePath(), QSettings::IniFormat);
     
-    // 恢复基本设置
+    // 恢复窗口几何形状
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
     
-    bool darkTheme = settings.value("isDarkTheme", true).toBool();
-    if (darkTheme != isDarkTheme) {
-        isDarkTheme = darkTheme;
-        applyTheme(isDarkTheme);
-    }
+    // 恢复窗口位置和大小
+    resize(settings.value("windowSize", QSize(800, 600)).toSize());
+    move(settings.value("windowPosition", QPoint(100, 100)).toPoint());
     
-    // 恢复语言和编码设置
-    QString lang = settings.value("shaderLanguage").toString();
-    if (!lang.isEmpty()) {
-        languageCombo->setCurrentText(lang);
-    }
-    
-    QString encoding = settings.value("encoding").toString();
-    if (!encoding.isEmpty()) {
-        encodingCombo->setCurrentText(encoding);
-    }
-    
-    // 恢复包含路径和宏定义
-    QStringList includePaths = settings.value("includePaths").toStringList();
-    includePathList->clear();
-    includePathList->addItems(includePaths);
-    
-    QStringList macros = settings.value("macros").toStringList();
-    macroList->clear();
-    macroList->addItems(macros);
-    
-    // 恢复文件内容
-    QString filePath = settings.value("filePath").toString();
-    if (!filePath.isEmpty()) {
-        filePathEdit->setText(filePath);
-        if (QFile::exists(filePath)) {
-            loadFileContent(filePath);
-        } else {
-            inputEdit->setText(settings.value("inputContent").toString());
-        }
-    }
-    
-    outputEdit->setText(settings.value("outputContent").toString());
-    
-    // 恢复编译器历史记录
-    lastHLSLCompiler = settings.value("lastHLSLCompiler", "DXC").toString();
-    lastGLSLCompiler = settings.value("lastGLSLCompiler", "GLSLANG").toString();
-    
-    // 根据当前语言更新编译器设置
-    compilerSettingUI->onLanguageChanged(languageCombo->currentText());
-    
+    // 恢复语言设置
+    QString language = settings.value("language", "HLSL").toString();
+    languageCombo->setCurrentText(language);
+    compilerSettingUI->onLanguageChanged(language);  // 更新编译器设置
+
     // 恢复编译器设置
     QString compiler = settings.value("compiler").toString();
     if (!compiler.isEmpty()) {
@@ -879,6 +854,79 @@ void MainWindow::loadSettings()
     compilerSettingUI->setOutputType(outputType);
     
     lastOpenDir = settings.value("lastOpenDir", QDir::currentPath()).toString();
+    
+    // 恢复文件路径和编码
+    filePathEdit->setText(settings.value("filePath", "").toString());
+    encodingCombo->setCurrentText(settings.value("encoding", "UTF-8").toString());
+    
+    // 恢复包含路径
+    QStringList includePaths = settings.value("includePaths").toStringList();
+    includePathList->clear();
+    includePathList->addItems(includePaths);
+    
+    // 恢复宏定义
+    QStringList macros = settings.value("macros").toStringList();
+    macroList->clear();
+    macroList->addItems(macros);
+    
+    // 恢复编辑器内容
+    inputEdit->setText(settings.value("inputContent", "").toString());
+    outputEdit->setText(settings.value("outputContent", "").toString());
+}
+
+void MainWindow::onSaveSettings()
+{
+    QSettings settings(settingsFilePath(), QSettings::IniFormat);  // 使用指定路径保存设置
+    
+    // 保存窗口几何形状
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState());
+    
+    // 保存窗口位置和大小
+    settings.setValue("windowSize", size());
+    settings.setValue("windowPosition", pos());
+    
+    // 保存语言设置
+    settings.setValue("language", languageCombo->currentText());
+    
+    // 保存编译器设置
+    settings.setValue("compiler", compilerSettingUI->getCurrentCompiler());
+    settings.setValue("entryPoint", compilerSettingUI->getEntryPoint());
+    settings.setValue("shaderType", compilerSettingUI->getShaderType());
+    settings.setValue("shaderModel", compilerSettingUI->getShaderModel());
+    settings.setValue("outputType", compilerSettingUI->getOutputType());
+    
+    // 保存文件路径和编码
+    settings.setValue("filePath", filePathEdit->text());
+    settings.setValue("encoding", encodingCombo->currentText());
+    
+    // 保存包含路径
+    QStringList includePaths;
+    for (int i = 0; i < includePathList->count(); ++i) {
+        includePaths << includePathList->item(i)->text();
+    }
+    settings.setValue("includePaths", includePaths);
+    
+    // 保存宏定义
+    QStringList macros;
+    for (int i = 0; i < macroList->count(); ++i) {
+        macros << macroList->item(i)->text();
+    }
+    settings.setValue("macros", macros);
+    
+    // 保存编辑器内容
+    settings.setValue("inputContent", inputEdit->toPlainText());
+    settings.setValue("outputContent", outputEdit->toPlainText());
+    
+    // 保存编译器历史记录
+    settings.setValue("lastHLSLCompiler", lastHLSLCompiler);
+    settings.setValue("lastGLSLCompiler", lastGLSLCompiler);
+    
+    // 保存最后打开的目录
+    settings.setValue("lastOpenDir", lastOpenDir);
+    
+    // 确保所有设置被写入到文件
+    settings.sync();
 }
 
 void MainWindow::updateIncludeListHeight()
@@ -909,4 +957,20 @@ void MainWindow::updateMacroListHeight()
     // 设置新的高度（加上一些边距）
     int newHeight = neededRows * rowHeight + 8;  // 8px for padding
     macroList->setFixedHeight(newHeight);
+}
+
+// 更新当前编译器设置
+void MainWindow::updateCurrentCompilerSettings(const QString &compiler)
+{
+    // 更新着色器类型、模型和输出类型
+    QString shaderType = compilerSettingUI->getShaderType();
+    QString shaderModel = compilerSettingUI->getShaderModel();
+    QString outputType = compilerSettingUI->getOutputType();
+
+    // 记录设置
+    QSettings settings("YourCompany", "YourApp");
+    settings.setValue("compiler", compiler);
+    settings.setValue("shaderType", shaderType);
+    settings.setValue("shaderModel", shaderModel);
+    settings.setValue("outputType", outputType);
 } 

@@ -9,6 +9,7 @@
 #include <QtWidgets/QPushButton>
 #include "fxcCompiler.h"
 #include "compilerSettingUI.h"
+#include <QSettings>
 
 class MainWindow : public QMainWindow
 {
@@ -37,6 +38,7 @@ private slots:
     void onAddMacro();
     void onRemoveMacro();
     void showMacroDialog();
+    void onSaveSettings();
 
 private:
     // UI 组件
@@ -77,14 +79,13 @@ private:
 
     // 可能需要的其他编译器相关控件
     QComboBox *targetProfileCombo;  // shader模型选择
-
     QComboBox *shaderTypeCombo;  // shader类型选择
-
     QComboBox *shaderModelCombo;  // shader模型选择
-
     QComboBox *outputTypeCombo;  // 输出类型选择
-
     QPushButton *buildButton;  // 构建按钮
+
+    // 新增方法声明
+    void updateCurrentCompilerSettings(const QString &compiler);
 };
 
 #endif // MAINWINDOW_H 
