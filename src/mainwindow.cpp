@@ -333,7 +333,7 @@ void MainWindow::setupUI()
     outputLayout->addWidget(line);
     
     // 日志面板
-    QHBoxLayout *logPanelLayout = new QHBoxLayout();  // 改名为logPanelLayout
+    QHBoxLayout *logPanelLayout = new QHBoxLayout();
     logPanelLayout->addWidget(new QLabel(tr("Log:")));
     logEdit = new QTextEdit(this);
     logEdit->setReadOnly(true);  // 设置为只读
@@ -343,16 +343,6 @@ void MainWindow::setupUI()
     outputLayout->addLayout(logPanelLayout);
     
     rightLayout->addWidget(outputGroup);
-    
-    // 添加日志输出区域
-    QGroupBox *logGroup = new QGroupBox(tr("Compilation Log"), this);
-    QVBoxLayout *logGroupLayout = new QVBoxLayout(logGroup);  // 改名为logGroupLayout
-    
-    logEdit = new QTextEdit(this);
-    logEdit->setReadOnly(true);
-    logGroupLayout->addWidget(logEdit);
-    
-    rightLayout->addWidget(logGroup, 1);  // 添加拉伸因子1
     
     // 添加面板到主布局
     contentLayout->addWidget(leftPanel);
