@@ -773,56 +773,6 @@ QString MainWindow::settingsFilePath() const
     return configPath + "/settings.ini";  // 返回完整的配置文件路径
 }
 
-void MainWindow::saveSettings()
-{
-    QSettings settings(settingsFilePath(), QSettings::IniFormat);
-    
-    // 保存窗口几何形状
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("windowState", saveState());
-    
-    // 保存窗口位置和大小
-    settings.setValue("windowSize", size());
-    settings.setValue("windowPosition", pos());
-    
-    // 保存其他设置
-    settings.setValue("isDarkTheme", isDarkTheme);
-    settings.setValue("shaderLanguage", languageCombo->currentText());
-    settings.setValue("filePath", filePathEdit->text());
-    settings.setValue("encoding", encodingCombo->currentText());
-    
-    // 保存编译器设置
-    settings.setValue("compiler", compilerSettingUI->getCurrentCompiler());
-    settings.setValue("entryPoint", compilerSettingUI->getEntryPoint());
-    settings.setValue("shaderType", compilerSettingUI->getShaderType());
-    settings.setValue("shaderModel", compilerSettingUI->getShaderModel());
-    settings.setValue("outputType", compilerSettingUI->getOutputType());
-    
-    // 保存包含路径和宏定义
-    QStringList includePaths;
-    for (int i = 0; i < includePathList->count(); ++i) {
-        includePaths << includePathList->item(i)->text();
-    }
-    settings.setValue("includePaths", includePaths);
-    
-    QStringList macros;
-    for (int i = 0; i < macroList->count(); ++i) {
-        macros << macroList->item(i)->text();
-    }
-    settings.setValue("macros", macros);
-    
-    // 保存编辑器内容
-    settings.setValue("inputContent", inputEdit->toPlainText());
-    settings.setValue("outputContent", outputEdit->toPlainText());
-    
-    // 保存编译器历史记录
-    settings.setValue("lastHLSLCompiler", lastHLSLCompiler);
-    settings.setValue("lastGLSLCompiler", lastGLSLCompiler);
-    
-    // 保存最后打开的目录
-    settings.setValue("lastOpenDir", lastOpenDir);
-}
-
 void MainWindow::loadSettings()
 {
     QSettings settings(settingsFilePath(), QSettings::IniFormat);
@@ -873,10 +823,6 @@ void MainWindow::loadSettings()
     QStringList macros = settings.value("macros").toStringList();
     macroList->clear();
     macroList->addItems(macros);
-    
-    // 恢复编辑器内容
-    inputEdit->setText(settings.value("inputContent", "").toString());
-    outputEdit->setText(settings.value("outputContent", "").toString());
 }
 
 void MainWindow::onSaveSettings()
@@ -918,10 +864,6 @@ void MainWindow::onSaveSettings()
         macros << macroList->item(i)->text();
     }
     settings.setValue("macros", macros);
-    
-    // 保存编辑器内容
-    settings.setValue("inputContent", inputEdit->toPlainText());
-    settings.setValue("outputContent", outputEdit->toPlainText());
     
     // 保存编译器历史记录
     settings.setValue("lastHLSLCompiler", lastHLSLCompiler);

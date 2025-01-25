@@ -73,7 +73,6 @@ private:
     void applyTheme(bool dark);
     void updateIncludeListHeight();
     void updateMacroListHeight();
-    void saveSettings();
     void loadSettings();
     QString settingsFilePath() const;
 
