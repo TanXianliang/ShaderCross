@@ -310,6 +310,10 @@ void MainWindow::onBrowseFile()
 
 void MainWindow::onCompile()
 {
+    // 清空 Output 和 Log 窗口的内容
+    outputEdit->clear();
+    logEdit->clear();
+
     QString inputFile = filePathEdit->text();
     QString shaderModel = compilerSettingUI->getShaderModel();
     QString entryPoint = compilerSettingUI->getEntryPoint();
