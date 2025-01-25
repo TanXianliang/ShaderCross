@@ -24,6 +24,7 @@ include_directories(
     "C:/Qt/Qt5.12.5/5.12.5/msvc2017_64/include"
     "C:/Qt/Qt5.12.5/5.12.5/msvc2017_64/include/QtWidgets"
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/fxc
 )
 
 # 添加资源文件
@@ -65,6 +66,14 @@ add_custom_command(TARGET ShaderCompiler POST_BUILD
         ${QT_BIN_PATH}/Qt5Widgets.dll
         ${QT_BIN_PATH}/Qt5Core.dll
         ${QT_BIN_PATH}/Qt5Gui.dll
+        $<TARGET_FILE_DIR:ShaderCompiler>
+)
+
+# 复制 fxc 依赖工具到输出目录
+add_custom_command(TARGET ShaderCompiler POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/fxc/fxc.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/fxc/d3dcompiler_47.dll
         $<TARGET_FILE_DIR:ShaderCompiler>
 )
 
