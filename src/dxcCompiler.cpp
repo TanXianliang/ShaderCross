@@ -3,7 +3,7 @@
 #include <QDebug>
 #include <QFile>
 #include <QTextStream>
-#include <QDir>  // 添加 QDir 头文件
+#include <QDir>
 
 // 构造函数，初始化 dxcCompiler。
 dxcCompiler::dxcCompiler(QObject *parent) : QObject(parent) {}
@@ -28,8 +28,15 @@ void dxcCompiler::compile(const QString &shaderCode,
     out << shaderCode;  // 写入 Shader 代码
     tempFile.close();
 
-    QString command = buildCommand(tempFilePath, shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
-    
+    QString outputFilePath;
+    if (outputType == "DXIL") {
+        outputFilePath = QDir::temp().filePath("output_shader.dxil");
+    } else{
+        outputFilePath = QDir::temp().filePath("output_shader.spv");
+    }
+
+    QString command = buildCommand(tempFilePath, shaderModel, entryPoint, shaderType, outputType, includePaths, macros, outputFilePath);
+
     QProcess process;
     process.start(command);
     process.waitForFinished();
@@ -37,38 +44,69 @@ void dxcCompiler::compile(const QString &shaderCode,
     QString output = process.readAllStandardOutput();
     QString error = process.readAllStandardError();
 
-    // 判断编译是否成功
-    if (output.isEmpty()) {
+    if (!QFile::exists(outputFilePath)) {
         emit compilationError(error.isEmpty() ? "Compilation failed with no output." : error);
     } else {
-        emit compilationFinished(output);
-        
-        // 如果 error 非空，将其输出为警告信息
-        if (!error.isEmpty()) {
-            emit compilationWarning(error);  // 直接发出警告信号
+        QProcess process;
+        QString disasmOutput;
+
+        if (outputType == "DXIL"){
+            // 使用dxc反编译DXIL
+            QString dxilDisasmCommand = QString("dxc.exe -dumpbin \"%1\"").arg(outputFilePath);
+            process.start(dxilDisasmCommand);
+            process.waitForFinished();
+            disasmOutput = process.readAllStandardOutput();
+            output = disasmOutput;
+        } else if (outputType == "SPIR-V"){
+            // 使用spirv-dis反编译SPIR-V
+            QString spirvDisCommand = QString("spirv-dis.exe \"%1\"").arg(outputFilePath);
+            process.start(spirvDisCommand);
+            process.waitForFinished();
+            disasmOutput = process.readAllStandardOutput();
+            output = disasmOutput;
+        } else if (outputType == "GLSL"){
+            // 使用spirv-cross将SPIR-V转换为GLSL
+            QString spirvCrossCommand = QString("spirv-cross.exe \"%1\" -V").arg(outputFilePath);
+            process.start(spirvCrossCommand);
+            process.waitForFinished();
+            disasmOutput = process.readAllStandardOutput();
+            output = disasmOutput;
+        }
+
+        QString errorDisasm = process.readAllStandardError();
+
+        if (output.isEmpty()) {
+            emit compilationError(errorDisasm.isEmpty() ? "Compilation failed with no output." : errorDisasm);
+        } else {
+            emit compilationFinished(output);
+
+            // 如果 error 非空，将其输出为警告信息
+            if (!error.isEmpty()) {
+                emit compilationWarning(error);  // 直接发出错误信号
+            }
+
+            if (!errorDisasm.isEmpty()) {
+                emit compilationWarning(errorDisasm);
+            }
         }
     }
 
+    
+
     // 删除临时文件
     QFile::remove(tempFilePath);
+    QFile::remove(outputFilePath);
 }
 
-// 构建编译命令的方法
-QString dxcCompiler::buildCommand(const QString &tempFilePath,  // 修改为接受临时文件路径
+QString dxcCompiler::buildCommand(const QString &tempFilePath, 
                                    const QString &shaderModel, 
                                    const QString &entryPoint,
                                    const QString &shaderType,
                                    const QString &outputType,
                                    const QStringList &includePaths,
-                                   const QStringList &macros) 
+                                   const QStringList &macros,
+                                   const QString &outputFilePath) 
 {
-    // 检查输出类型是否支持
-    QStringList supportedOutputTypes = {"DXIL", "SPIR-V"};
-    if (!supportedOutputTypes.contains(outputType)) {
-        emit compilationError(QString("DXC compiler only supports output types: %1").arg(supportedOutputTypes.join(", ")));
-        return QString();
-    }
-    
     // 基础命令
     QString command = "dxc.exe";
     
@@ -82,7 +120,7 @@ QString dxcCompiler::buildCommand(const QString &tempFilePath,  // 修改为接�
     command += QString(" -E %1").arg(entryPoint);
     
     // 添加输出类型
-    if (outputType == "SPIR-V") {
+    if (outputType == "SPIR-V" || outputType == "GLSL") {
         command += " -spirv";
     }
 
@@ -97,6 +135,8 @@ QString dxcCompiler::buildCommand(const QString &tempFilePath,  // 修改为接�
     for (const QString &macro : macros) {
         command += QString(" -D %1").arg(macro);
     }
+
+    command += QString(" -Fo \"%1\"").arg(outputFilePath);
     
     // 添加输入文件
     command += QString(" \"%1\"").arg(tempFilePath);

@@ -40,7 +40,8 @@ private:
                          const QString &shaderType,
                          const QString &outputType,
                          const QStringList &includePaths,
-                         const QStringList &macros);
+                         const QStringList &macros,
+                         const QString &outputFilePath);
 };
 
 #endif // DXCCOMPILER_H
