@@ -51,6 +51,8 @@ add_executable(ShaderCompiler
     src/languageConfig.cpp
     src/compilerSettingUI.h
     src/compilerSettingUI.cpp
+    src/shaderCodeTextEdit.h
+    src/shaderCodeTextEdit.cpp
     ${QRC_SOURCES}
 )
 
