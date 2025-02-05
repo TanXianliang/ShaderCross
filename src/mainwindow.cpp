@@ -862,8 +862,7 @@ void MainWindow::loadSettings()
     
     lastOpenDir = settings.value("lastOpenDir", QDir::currentPath()).toString();
     
-    // 恢复文件路径和编码
-    filePathEdit->setText(settings.value("filePath", "").toString());
+    // 恢复编码
     encodingCombo->setCurrentText(settings.value("encoding", "UTF-8").toString());
     
     // 恢复包含路径
@@ -875,6 +874,9 @@ void MainWindow::loadSettings()
     QStringList macros = settings.value("macros").toStringList();
     macroList->clear();
     macroList->addItems(macros);
+
+    // 恢复输入框内容
+    inputEdit->setPlainText(settings.value("inputContent").toString());
 }
 
 void MainWindow::onSaveSettings()
@@ -899,8 +901,7 @@ void MainWindow::onSaveSettings()
     settings.setValue("shaderModel", compilerSettingUI->getShaderModel());
     settings.setValue("outputType", compilerSettingUI->getOutputType());
     
-    // 保存文件路径和编码
-    settings.setValue("filePath", filePathEdit->text());
+    // 保存编码
     settings.setValue("encoding", encodingCombo->currentText());
     
     // 保存包含路径
@@ -923,6 +924,9 @@ void MainWindow::onSaveSettings()
     
     // 保存最后打开的目录
     settings.setValue("lastOpenDir", lastOpenDir);
+    
+    // 保存输入框内容
+    settings.setValue("inputContent", inputEdit->toPlainText());
     
     // 确保所有设置被写入到文件
     settings.sync();
