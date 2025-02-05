@@ -17,6 +17,15 @@ QStringList LanguageConfig::getSupportedCompilers(const QString& language) const
     return languageCapabilities[language].supportedCompilers;
 }
 
+// 获取支持的语言列表
+QStringList LanguageConfig::getSupportedLanguages() const {
+    QStringList languages;
+    for (const auto& language : languageCapabilities.keys()) {
+        languages << language;
+    }
+    return languages;
+}
+
 // 检查是否支持指定的语言
 bool LanguageConfig::hasLanguage(const QString& language) const {
     return languageCapabilities.contains(language);
@@ -33,4 +42,9 @@ LanguageConfig::LanguageConfig() {
     LanguageCapability glsl;
     glsl.supportedCompilers = QStringList() << "GLSLANG";
     languageCapabilities["GLSL"] = glsl;
+
+    // GLSL 语言配置
+    LanguageCapability glslkgver;
+    glslkgver.supportedCompilers = QStringList() << "GLSLANG";
+    languageCapabilities["GLSLKGVER"] = glslkgver;
 }

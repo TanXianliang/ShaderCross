@@ -122,7 +122,9 @@ void MainWindow::setupUI()
     // Language selection
     QHBoxLayout *langLayout = new QHBoxLayout();
     languageCombo = new QComboBox(this);
-    languageCombo->addItems(QStringList() << "HLSL" << "GLSL");
+
+    QStringList languages = LanguageConfig::instance().getSupportedLanguages();
+    languageCombo->addItems(languages);
     langLayout->addWidget(new QLabel(tr("Shader Language:")));
     langLayout->addWidget(languageCombo);
     inputLayout->addLayout(langLayout);

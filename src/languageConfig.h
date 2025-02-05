@@ -18,6 +18,9 @@ public:
     
     // 获取支持的编译器列表。
     QStringList getSupportedCompilers(const QString& language) const;
+
+    // 获取支持的语言列表。
+    QStringList getSupportedLanguages() const;
     
     // 检查是否支持指定的语言。
     bool hasLanguage(const QString& language) const;
