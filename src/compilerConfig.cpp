@@ -52,4 +52,12 @@ CompilerConfig::CompilerConfig() {
     glslang.supportedShaderModels = QStringList() << "450" << "460";
     glslang.supportedOutputTypes = QStringList() << "SPIR-V" << "HLSL" << "GLSL";
     compilerCapabilities["GLSLANG"] = glslang;
+
+    // GLSLANGKGVER 编译器配置
+    CompilerCapability glslangkgver;
+    glslangkgver.supportedShaderTypes = QStringList() 
+        << "Vertex" << "Pixel" << "Compute";
+    glslangkgver.supportedShaderModels = QStringList() << "450" << "460";
+    glslangkgver.supportedOutputTypes = QStringList() << "SPIR-V" << "HLSL" << "GLSL";
+    compilerCapabilities["GLSLANGKGVER"] = glslangkgver;
 }

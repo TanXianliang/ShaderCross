@@ -43,8 +43,8 @@ LanguageConfig::LanguageConfig() {
     glsl.supportedCompilers = QStringList() << "GLSLANG";
     languageCapabilities["GLSL"] = glsl;
 
-    // GLSL 语言配置
+    // GLSLKGVER 语言配置
     LanguageCapability glslkgver;
-    glslkgver.supportedCompilers = QStringList() << "GLSLANG";
+    glslkgver.supportedCompilers = QStringList() << "GLSLANGKGVER";
     languageCapabilities["GLSLKGVER"] = glslkgver;
 }
