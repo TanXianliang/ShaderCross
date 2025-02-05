@@ -1,12 +1,15 @@
 #include "dxcCompiler.h"
 #include <QProcess>
 #include <QDebug>
+#include <QFile>
+#include <QTextStream>
+#include <QDir>  // 添加 QDir 头文件
 
 // 构造函数，初始化 dxcCompiler。
 dxcCompiler::dxcCompiler(QObject *parent) : QObject(parent) {}
 
 // 编译方法，执行编译操作。
-void dxcCompiler::compile(const QString &inputFile, 
+void dxcCompiler::compile(const QString &shaderCode, 
                           const QString &shaderModel, 
                           const QString &entryPoint,
                           const QString &shaderType,
@@ -14,7 +17,18 @@ void dxcCompiler::compile(const QString &inputFile,
                           const QStringList &includePaths,
                           const QStringList &macros) 
 {
-    QString command = buildCommand(inputFile, shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
+    // 使用临时文件来存储 Shader 代码
+    QString tempFilePath = QDir::temp().filePath("temp_shader.hlsl");
+    QFile tempFile(tempFilePath);
+    if (!tempFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        emit compilationError("Failed to create temporary shader file.");
+        return;
+    }
+    QTextStream out(&tempFile);
+    out << shaderCode;  // 写入 Shader 代码
+    tempFile.close();
+
+    QString command = buildCommand(tempFilePath, shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
     
     QProcess process;
     process.start(command);
@@ -34,10 +48,13 @@ void dxcCompiler::compile(const QString &inputFile,
             emit compilationWarning(error);  // 直接发出警告信号
         }
     }
+
+    // 删除临时文件
+    QFile::remove(tempFilePath);
 }
 
 // 构建编译命令的方法
-QString dxcCompiler::buildCommand(const QString &inputFile, 
+QString dxcCompiler::buildCommand(const QString &tempFilePath,  // 修改为接受临时文件路径
                                    const QString &shaderModel, 
                                    const QString &entryPoint,
                                    const QString &shaderType,
@@ -82,7 +99,7 @@ QString dxcCompiler::buildCommand(const QString &inputFile,
     }
     
     // 添加输入文件
-    command += QString(" \"%1\"").arg(inputFile);
+    command += QString(" \"%1\"").arg(tempFilePath);
     
     return command;
 }

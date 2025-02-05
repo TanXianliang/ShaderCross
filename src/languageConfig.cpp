@@ -26,11 +26,11 @@ bool LanguageConfig::hasLanguage(const QString& language) const {
 LanguageConfig::LanguageConfig() {
     // HLSL 语言配置 - 支持所有编译器
     LanguageCapability hlsl;
-    hlsl.supportedCompilers = QStringList() << "FXC" << "DXC" << "GLSLANG" << "SPIRV-CROSS";
+    hlsl.supportedCompilers = QStringList() << "FXC" << "DXC" << "GLSLANG";
     languageCapabilities["HLSL"] = hlsl;
 
     // GLSL 语言配置
     LanguageCapability glsl;
-    glsl.supportedCompilers = QStringList() << "GLSLANG" << "SPIRV-CROSS";
+    glsl.supportedCompilers = QStringList() << "GLSLANG";
     languageCapabilities["GLSL"] = glsl;
 }

@@ -317,27 +317,45 @@ void MainWindow::onCompile()
     outputEdit->clear();
     logEdit->clear();
 
-    QString inputFile = filePathEdit->text();
+    QString shaderCode = inputEdit->toPlainText();  // 获取 Shader 代码
     QString shaderModel = compilerSettingUI->getShaderModel();
     QString entryPoint = compilerSettingUI->getEntryPoint();
     QString shaderType = compilerSettingUI->getShaderType();
+    QString currentCompiler = compilerSettingUI->getCurrentCompiler();  // 获取当前选择的编译器
     QString outputType = compilerSettingUI->getOutputType();  // 获取输出类型
-    
+
     // 获取包含路径列表
     QStringList includePaths;
     for (int i = 0; i < includePathList->count(); ++i) {
         includePaths << includePathList->item(i)->text();
     }
-    
+
     // 获取宏定义列表
     QStringList macros;
     for (int i = 0; i < macroList->count(); ++i) {
         macros << macroList->item(i)->text();
     }
 
-    // 根据选择的编译器类型进行编译
-    QString currentCompiler = compilerSettingUI->getCurrentCompiler();
-    if (currentCompiler == "DXC") {
+    // 根据选择的编译器实例化相应的编译器
+    if (currentCompiler == "FXC") {
+        fxcCompiler *fxcCompilerInstance = new fxcCompiler(this);
+        connect(fxcCompilerInstance, &fxcCompiler::compilationFinished, this, [this](const QString &output) {
+            outputEdit->setTextColor(Qt::green);
+            outputEdit->append(tr("Compilation succeeded:\n") + output);
+            logEdit->setTextColor(Qt::green);
+            logEdit->append(tr("Compilation succeeded"));
+        });
+
+        connect(fxcCompilerInstance, &fxcCompiler::compilationError, this, [this](const QString &error) {
+            outputEdit->setTextColor(Qt::red);
+            outputEdit->append(tr("Compilation error:\n") + error);
+            logEdit->setTextColor(Qt::red);
+            logEdit->append(tr("Compilation failed"));
+        });
+
+        // 调用 fxcCompiler 进行编译
+        fxcCompilerInstance->compile(shaderCode, shaderModel, entryPoint, shaderType, includePaths, macros);
+    } else if (currentCompiler == "DXC") {
         dxcCompiler *dxcCompilerInstance = new dxcCompiler(this);
         connect(dxcCompilerInstance, &dxcCompiler::compilationFinished, this, [this](const QString &output) {
             outputEdit->setTextColor(Qt::green);
@@ -353,16 +371,10 @@ void MainWindow::onCompile()
             logEdit->append(tr("Compilation failed"));
         });
 
-        connect(dxcCompilerInstance, &dxcCompiler::compilationWarning, this, [this](const QString &warning) {
-            logEdit->setTextColor(Qt::yellow);  // 设置字体颜色为黄色
-            logEdit->append(tr("Warning: ") + warning);
-        });
-
         // 调用 dxcCompiler 进行编译
-        dxcCompilerInstance->compile(inputFile, shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
+        dxcCompilerInstance->compile(shaderCode, shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
     } else {
-        // 处理其他编译器（如 FXC）
-        compiler->compile(inputFile, shaderModel, entryPoint, shaderType, includePaths, macros);
+        QMessageBox::warning(this, tr("Error"), tr("Unsupported compiler selected."));
     }
 }
 

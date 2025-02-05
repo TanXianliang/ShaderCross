@@ -40,7 +40,7 @@ CompilerConfig::CompilerConfig() {
         << "RayGeneration" << "Intersection" << "AnyHit" << "ClosestHit"
         << "Miss" << "Callable" << "Mesh";
     dxc.supportedShaderModels = QStringList() << "5_0" << "5_1" << "6_0" << "6_4";
-    dxc.supportedOutputTypes = QStringList() << "DXIL" << "SPIR-V";
+    dxc.supportedOutputTypes = QStringList() << "DXIL" << "SPIR-V" << "GLSL";
     compilerCapabilities["DXC"] = dxc;
 
     // GLSLANG 编译器配置
@@ -50,14 +50,6 @@ CompilerConfig::CompilerConfig() {
         << "RayGeneration" << "Intersection" << "AnyHit" << "ClosestHit"
         << "Miss" << "Callable" << "Mesh";
     glslang.supportedShaderModels = QStringList() << "450" << "460";
-    glslang.supportedOutputTypes = QStringList() << "SPIR-V";
+    glslang.supportedOutputTypes = QStringList() << "SPIR-V" << "HLSL" << "GLSL";
     compilerCapabilities["GLSLANG"] = glslang;
-
-    // SPIRV-Cross 配置
-    CompilerCapability spirvCross;
-    spirvCross.supportedShaderTypes = QStringList() 
-        << "Vertex" << "Pixel" << "Geometry" << "Compute";
-    spirvCross.supportedShaderModels = QStringList();  // SPIRV-Cross 不需要 shader model
-    spirvCross.supportedOutputTypes = QStringList() << "HLSL" << "GLSL";
-    compilerCapabilities["SPIRV-CROSS"] = spirvCross;
 }

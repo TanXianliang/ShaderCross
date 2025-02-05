@@ -1,17 +1,31 @@
 #include "fxcCompiler.h"
 #include <QProcess>
 #include <QDebug>
+#include <QFile>
+#include <QTextStream>
+#include <QDir>
 
 fxcCompiler::fxcCompiler(QObject *parent) : QObject(parent) {}
 
-void fxcCompiler::compile(const QString &inputFile, 
+void fxcCompiler::compile(const QString &shaderCode, 
                           const QString &shaderModel, 
                           const QString &entryPoint,
                           const QString &shaderType,
                           const QStringList &includePaths,
                           const QStringList &macros) 
 {
-    QString command = buildCommand(inputFile, shaderModel, entryPoint, shaderType, includePaths, macros);
+    // 使用临时文件来存储 Shader 代码
+    QString tempFilePath = QDir::temp().filePath("temp_shader.hlsl");
+    QFile tempFile(tempFilePath);
+    if (!tempFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        emit compilationError("Failed to create temporary shader file.");
+        return;
+    }
+    QTextStream out(&tempFile);
+    out << shaderCode;  // 写入 Shader 代码
+    tempFile.close();
+
+    QString command = buildCommand(tempFilePath, shaderModel, entryPoint, shaderType, includePaths, macros);
     
     QProcess process;
     process.start(command);
@@ -26,11 +40,14 @@ void fxcCompiler::compile(const QString &inputFile,
     } else {
         emit compilationFinished(output);
         
-        // 如果 error 非空，将其输出到输出窗口
+        // 如果 error 非空，将其输出为警告信息
         if (!error.isEmpty()) {
             emit compilationError(error);  // 直接发出错误信号
         }
     }
+
+    // 删除临时文件
+    QFile::remove(tempFilePath);
 }
 
 QString fxcCompiler::buildCommand(const QString &inputFile, 

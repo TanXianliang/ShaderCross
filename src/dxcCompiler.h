@@ -13,8 +13,8 @@ public:
     // 构造函数，初始化 dxcCompiler。
     explicit dxcCompiler(QObject *parent = nullptr);
     
-    // 编译方法，执行编译操作。
-    void compile(const QString &inputFile, 
+    // 修改编译方法，接受 Shader 代码字符串
+    void compile(const QString &shaderCode, 
                  const QString &shaderModel, 
                  const QString &entryPoint,
                  const QString &shaderType,
@@ -34,7 +34,7 @@ signals:
 
 private:
     // 构建编译命令的方法。
-    QString buildCommand(const QString &inputFile, 
+    QString buildCommand(const QString &tempFilePath,  // 修改为接受临时文件路径
                          const QString &shaderModel, 
                          const QString &entryPoint,
                          const QString &shaderType,

@@ -10,7 +10,7 @@ class fxcCompiler : public QObject {
 
 public:
     explicit fxcCompiler(QObject *parent = nullptr);
-    void compile(const QString &inputFile, 
+    void compile(const QString &shaderCode, 
                 const QString &shaderModel, 
                 const QString &entryPoint,
                 const QString &shaderType,
@@ -22,7 +22,7 @@ signals:
     void compilationError(const QString &error);
 
 private:
-    QString buildCommand(const QString &inputFile, 
+    QString buildCommand(const QString &shaderCode, 
                         const QString &shaderModel, 
                         const QString &entryPoint,
                         const QString &shaderType,
