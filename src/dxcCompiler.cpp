@@ -35,6 +35,7 @@ void dxcCompiler::compile(const QString &shaderCode,
         outputFilePath = QDir::temp().filePath("output_shader.spv");
     }
 
+    QFile::remove(outputFilePath);
     QString command = buildCommand(tempFilePath, shaderModel, entryPoint, shaderType, outputType, includePaths, macros, outputFilePath);
 
     QProcess process;
@@ -48,31 +49,23 @@ void dxcCompiler::compile(const QString &shaderCode,
         emit compilationError(error.isEmpty() ? "Compilation failed with no output." : error);
     } else {
         QProcess process;
-        QString disasmOutput;
 
         if (outputType == "DXIL"){
             // 使用dxc反编译DXIL
             QString dxilDisasmCommand = QString("dxc.exe -dumpbin \"%1\"").arg(outputFilePath);
             process.start(dxilDisasmCommand);
-            process.waitForFinished();
-            disasmOutput = process.readAllStandardOutput();
-            output = disasmOutput;
         } else if (outputType == "SPIR-V"){
             // 使用spirv-dis反编译SPIR-V
             QString spirvDisCommand = QString("spirv-dis.exe \"%1\"").arg(outputFilePath);
             process.start(spirvDisCommand);
-            process.waitForFinished();
-            disasmOutput = process.readAllStandardOutput();
-            output = disasmOutput;
         } else if (outputType == "GLSL"){
             // 使用spirv-cross将SPIR-V转换为GLSL
             QString spirvCrossCommand = QString("spirv-cross.exe \"%1\" -V").arg(outputFilePath);
             process.start(spirvCrossCommand);
-            process.waitForFinished();
-            disasmOutput = process.readAllStandardOutput();
-            output = disasmOutput;
         }
 
+        process.waitForFinished();
+        output = process.readAllStandardOutput();
         QString errorDisasm = process.readAllStandardError();
 
         if (output.isEmpty()) {
@@ -90,8 +83,6 @@ void dxcCompiler::compile(const QString &shaderCode,
             }
         }
     }
-
-    
 
     // 删除临时文件
     QFile::remove(tempFilePath);
