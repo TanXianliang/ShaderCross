@@ -102,9 +102,25 @@ QString dxcCompiler::buildCommand(const QString &tempFilePath,
     QString command = "dxc.exe";
     
     // 添加着色器类型和模型
+    QString stage;
+    if (shaderType == "Vertex") stage = "vs";
+    else if (shaderType == "Pixel") stage = "ps"; 
+    else if (shaderType == "Geometry") stage = "gs";
+    else if (shaderType == "Hull") stage = "hs";
+    else if (shaderType == "Domain") stage = "ds";
+    else if (shaderType == "Compute") stage = "cs";
+    else if (shaderType == "RayGeneration") stage = "rgen";
+    else if (shaderType == "RayIntersection") stage = "rint";
+    else if (shaderType == "RayAnyHit") stage = "rahit";
+    else if (shaderType == "RayClosestHit") stage = "rchit";
+    else if (shaderType == "RayMiss") stage = "rmiss";
+    else if (shaderType == "RayCallable") stage = "rcall";
+    else if (shaderType == "Amplification") stage = "rs";
+    else if (shaderType == "Mesh") stage = "ms";
+
     QString model = shaderModel;
     model.replace(".", "_");
-    QString profile = QString(shaderType.toLower().at(0)) + QString("s_%1").arg(model);
+    QString profile = stage + QString("_%1").arg(model);
     command += QString(" -T %1").arg(profile);
     
     // 添加入口点

@@ -37,8 +37,8 @@ CompilerConfig::CompilerConfig() {
     CompilerCapability dxc;
     dxc.supportedShaderTypes = QStringList() 
         << "Vertex" << "Pixel" << "Geometry" << "Hull" << "Domain" << "Compute"
-        << "RayGeneration" << "Intersection" << "AnyHit" << "ClosestHit"
-        << "Miss" << "Callable" << "Mesh";
+        << "RayGeneration" << "RayIntersection" << "RayAnyHit" << "RayClosestHit"
+        << "RayMiss" << "RayCallable" << "Amplification" << "Mesh";
     dxc.supportedShaderModels = QStringList() << "5_0" << "5_1" << "6_0" << "6_4";
     dxc.supportedOutputTypes = QStringList() << "DXIL" << "SPIR-V" << "GLSL";
     compilerCapabilities["DXC"] = dxc;
@@ -46,9 +46,9 @@ CompilerConfig::CompilerConfig() {
     // GLSLANG 编译器配置
     CompilerCapability glslang;
     glslang.supportedShaderTypes = QStringList() 
-        << "Vertex" << "Pixel" << "Geometry" << "Compute"
-        << "RayGeneration" << "Intersection" << "AnyHit" << "ClosestHit"
-        << "Miss" << "Callable" << "Mesh";
+        << "Vertex" << "Pixel" << "Geometry" << "TessControl" << "TessEvaluation" << "Compute"
+        << "RayGeneration" << "RayIntersection" << "RayAnyHit" << "RayClosestHit"
+        << "RayMiss" << "RayCallable" << "Task" << "Mesh";
     glslang.supportedShaderModels = QStringList() << "450" << "460";
     glslang.supportedOutputTypes = QStringList() << "SPIR-V" << "HLSL" << "GLSL";
     compilerCapabilities["GLSLANG"] = glslang;
