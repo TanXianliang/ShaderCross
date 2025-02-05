@@ -28,6 +28,7 @@
 #include "languageConfig.h"
 #include "compilerSettingUI.h"
 #include "dxcCompiler.h"
+#include "glslangCompiler.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -73,6 +74,24 @@ MainWindow::MainWindow(QWidget *parent)
         }
         // 更新当前编译器设置
         updateCurrentCompilerSettings(compiler);
+    });
+
+    // 在 MainWindow 类中添加 glslangCompiler 的实例
+    glslangCompiler *glslangCompilerInstance = new glslangCompiler(this);
+
+    // 连接信号
+    connect(glslangCompilerInstance, &glslangCompiler::compilationFinished, this, [this](const QString &output) {
+        outputEdit->setTextColor(Qt::green);
+        outputEdit->append(tr("Compilation succeeded:\n") + output);
+        logEdit->setTextColor(Qt::green);
+        logEdit->append(tr("Compilation succeeded"));
+    });
+
+    connect(glslangCompilerInstance, &glslangCompiler::compilationError, this, [this](const QString &error) {
+        outputEdit->setTextColor(Qt::red);
+        outputEdit->append(tr("Compilation error:\n") + error);
+        logEdit->setTextColor(Qt::red);
+        logEdit->append(tr("Compilation failed"));
     });
 }
 
@@ -324,6 +343,9 @@ void MainWindow::onCompile()
     QString currentCompiler = compilerSettingUI->getCurrentCompiler();  // 获取当前选择的编译器
     QString outputType = compilerSettingUI->getOutputType();  // 获取输出类型
 
+    // 获取当前语言类型
+    QString shaderLanguageType = languageCombo->currentText();  // 获取语言类型
+
     // 获取包含路径列表
     QStringList includePaths;
     for (int i = 0; i < includePathList->count(); ++i) {
@@ -373,6 +395,24 @@ void MainWindow::onCompile()
 
         // 调用 dxcCompiler 进行编译
         dxcCompilerInstance->compile(shaderCode, shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
+    } else if (currentCompiler == "GLSLANG") {
+        glslangCompiler *glslangCompilerInstance = new glslangCompiler(this);
+        connect(glslangCompilerInstance, &glslangCompiler::compilationFinished, this, [this](const QString &output) {
+            outputEdit->setTextColor(Qt::green);
+            outputEdit->append(tr("Compilation succeeded:\n") + output);
+            logEdit->setTextColor(Qt::green);
+            logEdit->append(tr("Compilation succeeded"));
+        });
+
+        connect(glslangCompilerInstance, &glslangCompiler::compilationError, this, [this](const QString &error) {
+            outputEdit->setTextColor(Qt::red);
+            outputEdit->append(tr("Compilation error:\n") + error);
+            logEdit->setTextColor(Qt::red);
+            logEdit->append(tr("Compilation failed"));
+        });
+
+        // 调用 glslangCompiler 进行编译
+        glslangCompilerInstance->compile(shaderCode, shaderLanguageType, shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
     } else {
         QMessageBox::warning(this, tr("Error"), tr("Unsupported compiler selected."));
     }
