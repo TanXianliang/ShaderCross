@@ -43,6 +43,8 @@ add_executable(ShaderCompiler
     src/fxcCompiler.h
     src/dxcCompiler.cpp
     src/dxcCompiler.h
+    src/glslangCompiler.cpp
+    src/glslangCompiler.h
     src/compilerConfig.h
     src/compilerConfig.cpp
     src/languageConfig.h
