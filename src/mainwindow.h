@@ -10,6 +10,7 @@
 #include "fxcCompiler.h"
 #include "compilerSettingUI.h"
 #include <QSettings>
+#include "shaderCodeTextEdit.h"
 
 class MainWindow : public QMainWindow
 {
@@ -44,7 +45,7 @@ private:
     // UI 组件
     QLineEdit *filePathEdit;
     QPushButton *browseButton;
-    QTextEdit *inputEdit;
+    ShaderCodeTextEdit *inputEdit;
     QTextEdit *outputEdit;
     QTextEdit *logEdit;
     QComboBox *encodingCombo;

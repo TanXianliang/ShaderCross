@@ -29,6 +29,7 @@
 #include "compilerSettingUI.h"
 #include "dxcCompiler.h"
 #include "glslangCompiler.h"
+#include "shaderCodeTextEdit.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -74,6 +75,7 @@ MainWindow::MainWindow(QWidget *parent)
         }
         // 更新当前编译器设置
         updateCurrentCompilerSettings(compiler);
+        inputEdit->setShaderLanguage(languageCombo->currentText()); // 更新输入编辑器语言
     });
 
     // 在 MainWindow 类中添加 glslangCompiler 的实例
@@ -152,7 +154,7 @@ void MainWindow::setupUI()
     });
 
     // 添加文件内容显示区域
-    inputEdit = new QTextEdit(this);
+    inputEdit = new ShaderCodeTextEdit(this);
     inputEdit->setReadOnly(false);
     inputLayout->addWidget(inputEdit, 1);  // 添加拉伸因子1
     
@@ -275,6 +277,8 @@ void MainWindow::setupUI()
     
     // 设置中心部件
     setCentralWidget(centralWidget);
+
+    inputEdit->setShaderLanguage("HLSL");
 }
 
 void MainWindow::createMenus()
@@ -309,7 +313,7 @@ void MainWindow::loadFileContent(const QString &fileName)
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QTextStream in(&file);
         in.setCodec(encodingCombo->currentText().toLocal8Bit());
-        inputEdit->setText(in.readAll());
+        inputEdit->setPlainText(in.readAll());
         file.close();
     } else {
         QMessageBox::warning(this, tr("Error"), tr("Failed to open file"));

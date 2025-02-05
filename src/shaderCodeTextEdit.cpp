@@ -12,36 +12,38 @@ QStringList GetKeyWords(const QString &language)
             "float1" << "float2" << "float3" << "float4" <<
             "half1" << "half2" << "half3" << "half4" <<
             "double1" << "double2" << "double3" << "double4" <<
-            "string" << "texture" << "texture1D" << "texture1DArray" <<
-            "texture2D" << "texture2DArray" << "texture3D" << "textureCube" <<
-            "textureCubeArray" << "RWTexture1D" << "RWTexture1DArray" <<
+            "float2x2" << "float2x3" << "float2x4" << 
+            "float3x2" << "float3x3" << "float3x4" << 
+            "float4x2" << "float4x3" << "float4x4" <<
+            "string" << 
+            "SamplerState" << "Texture1D" << "Texture1DArray" <<
+            "Texture2D" << "Texture2DArray" << "Texture3D" << "TextureCube" <<
+            "TextureCubeArray" << "RWTexture1D" << "RWTexture1DArray" <<
             "RWTexture2D" << "RWTexture2DArray" << "RWTexture3D" <<
             "StructuredBuffer" << "RWStructuredBuffer" << "ByteAddressBuffer" <<
-            "RWByteAddressBuffer" << "Buffer" << "RWBuffer" <<
+            "RWByteAddressBuffer" << "Buffer" << "RWBuffer" << 
 
             // 结构体
             "struct" <<
 
             // 控制流
             "if" << "else" << "for" << "while" << "do" << "switch" << "case" << "default" <<
-            "break" << "continue" << "return" << "discard" <<
+            "break" << "continue" << "return" << "discard" << "clip" <<
 
             // 函数
-            "main" << "sin" << "cos" << "tan" << "asin" << "acos" << "atan" <<
+            "sin" << "cos" << "tan" << "asin" << "acos" << "atan" <<
             "pow" << "exp" << "log" << "log10" << "sqrt" << "length" << "normalize" <<
             "dot" << "cross" << "reflect" << "refract" << "lerp" << "saturate" <<
             "clamp" << "step" << "smoothstep" << "fmod" << "ceil" << "floor" <<
-            "round" << "frac" << "min" << "max" << "abs" << "sign" <<
+            "round" << "frac" << "min" << "max" << "abs" << "sign" << "any" << "all" <<
+            "mul" <<
 
             // 语义
             "in" << "out" << "inout" << "uniform" << "varying" << "attribute" << "const" <<
-            "static" << "shared" << "group" << "register" << "location" << "binding" <<
+            "static" << "groupshared" << "register" << "location" << "binding" << "numthreads" <<
 
             // 其他
-            "texture2D" << "sampler" << "samplerState" << "samplerComparisonState" <<
-            "Texture2D" << "Texture2DArray" << "Texture3D" << "TextureCube" <<
-            "TextureCubeArray" << "RWTexture2D" << "RWTexture2DArray" <<
-            "RWTexture3D" << "StructuredBuffer" << "RWStructuredBuffer" <<
+            "StructuredBuffer" << "RWStructuredBuffer" <<
             "ByteAddressBuffer" << "RWByteAddressBuffer" << "Buffer" << "RWBuffer";
 
     } else {
