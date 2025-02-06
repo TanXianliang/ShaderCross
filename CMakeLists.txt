@@ -45,6 +45,10 @@ add_executable(ShaderCross
     src/dxcCompiler.h
     src/glslangCompiler.cpp
     src/glslangCompiler.h
+    src/glslangkgverCompiler.cpp
+    src/glslangkgverCompiler.h
+    src/glslkgverCodePrebuilder.cpp
+    src/glslkgverCodePrebuilder.h
     src/compilerConfig.h
     src/compilerConfig.cpp
     src/languageConfig.h

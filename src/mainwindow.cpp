@@ -30,6 +30,7 @@
 #include "dxcCompiler.h"
 #include "glslangCompiler.h"
 #include "shaderCodeTextEdit.h"
+#include "glslangkgverCompiler.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -90,6 +91,22 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     connect(glslangCompilerInstance, &glslangCompiler::compilationError, this, [this](const QString &error) {
+        outputEdit->setTextColor(Qt::red);
+        outputEdit->append(tr("Compilation error:\n") + error);
+        logEdit->setTextColor(Qt::red);
+        logEdit->append(tr("Compilation failed"));
+    });
+
+    // 连接 glslangkgverCompiler 的信号
+    glslangkgverCompiler *glslangkgverCompilerInstance = new glslangkgverCompiler(this);
+    connect(glslangkgverCompilerInstance, &glslangkgverCompiler::compilationFinished, this, [this](const QString &output) {
+        outputEdit->setTextColor(Qt::green);
+        outputEdit->append(tr("Compilation succeeded:\n") + output);
+        logEdit->setTextColor(Qt::green);
+        logEdit->append(tr("Compilation succeeded"));
+    });
+
+    connect(glslangkgverCompilerInstance, &glslangkgverCompiler::compilationError, this, [this](const QString &error) {
         outputEdit->setTextColor(Qt::red);
         outputEdit->append(tr("Compilation error:\n") + error);
         logEdit->setTextColor(Qt::red);
@@ -399,6 +416,13 @@ void MainWindow::onCompile()
             logEdit->append(tr("Compilation failed"));
         });
 
+        connect(dxcCompilerInstance, &dxcCompiler::compilationWarning, this, [this](const QString &warning) {
+            outputEdit->setTextColor(Qt::yellow);
+            outputEdit->append(tr("Compilation warning:\n") + warning);
+            logEdit->setTextColor(Qt::yellow);
+            logEdit->append(tr("Compilation warning"));
+        });
+
         // 调用 dxcCompiler 进行编译
         dxcCompilerInstance->compile(shaderCode, shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
     } else if (currentCompiler == "GLSLANG") {
@@ -417,8 +441,33 @@ void MainWindow::onCompile()
             logEdit->append(tr("Compilation failed"));
         });
 
+        connect(glslangCompilerInstance, &glslangCompiler::compilationWarning, this, [this](const QString &warning) {
+            outputEdit->setTextColor(Qt::yellow);
+            outputEdit->append(tr("Compilation warning:\n") + warning);
+            logEdit->setTextColor(Qt::yellow);
+            logEdit->append(tr("Compilation warning"));
+        });
+
         // 调用 glslangCompiler 进行编译
         glslangCompilerInstance->compile(shaderCode, shaderLanguageType, shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
+    } else if (currentCompiler == "GLSLANGKGVER") {
+        glslangkgverCompiler *glslangkgverCompilerInstance = new glslangkgverCompiler(this);
+        connect(glslangkgverCompilerInstance, &glslangkgverCompiler::compilationFinished, this, [this](const QString &output) {
+            outputEdit->setTextColor(Qt::green);
+            outputEdit->append(tr("Compilation succeeded:\n") + output);
+            logEdit->setTextColor(Qt::green);
+            logEdit->append(tr("Compilation succeeded"));
+        });
+
+        connect(glslangkgverCompilerInstance, &glslangkgverCompiler::compilationError, this, [this](const QString &error) {
+            outputEdit->setTextColor(Qt::red);
+            outputEdit->append(tr("Compilation error:\n") + error);
+            logEdit->setTextColor(Qt::red);
+            logEdit->append(tr("Compilation failed"));
+        });
+
+        // 调用 glslangkgverCompiler 进行编译
+        glslangkgverCompilerInstance->compile(shaderCode, shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
     } else {
         QMessageBox::warning(this, tr("Error"), tr("Unsupported compiler selected."));
     }
