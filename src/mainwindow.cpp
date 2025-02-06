@@ -312,13 +312,12 @@ void MainWindow::createMenus()
     
     QMenu *buildMenu = menuBar()->addMenu(tr("Build"));
     buildMenu->addAction(tr("Compile"), this, &MainWindow::onCompile, Qt::Key_F5);
-    buildMenu->addAction(tr("Show Disassembly"), this, &MainWindow::onShowDisassembly, QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_D));
 
     QMenu *uiMenu = menuBar()->addMenu(tr("UI"));
     uiMenu->addAction(tr("Reset Layout"), this, &MainWindow::onResetLayout);
     uiMenu->addAction(tr("Toggle Output Panel"), this, &MainWindow::onToggleOutput, Qt::Key_F12);
-    uiMenu->addSeparator();
-    uiMenu->addAction(tr("Toggle Theme"), this, &MainWindow::onToggleTheme, QKeySequence(Qt::CTRL | Qt::Key_T));
+    //uiMenu->addSeparator();
+    //uiMenu->addAction(tr("Toggle Theme"), this, &MainWindow::onToggleTheme, QKeySequence(Qt::CTRL | Qt::Key_T));
 }
 
 void MainWindow::setupShortcuts()

@@ -112,7 +112,7 @@ void ShaderCodeHighlighter::highlightKeyword(const QString &text) {
         QRegularExpressionMatch match = expression.match(text);
         if (match.hasMatch()) {
             int index = match.capturedStart();
-            setFormat(index, keyword.length(), QColor(173, 216, 230)); // 粉蓝色
+            setFormat(index, keyword.length(), QColor(152, 193, 252));
         }
     }
 }
@@ -122,7 +122,7 @@ void ShaderCodeHighlighter::highlightComment(const QString &text) {
     QRegularExpressionMatchIterator it = commentExpression.globalMatch(text);
     while (it.hasNext()) {
         QRegularExpressionMatch match = it.next();
-        setFormat(match.capturedStart(), match.capturedLength(), Qt::green); // 注释高亮为绿色
+        setFormat(match.capturedStart(), match.capturedLength(), QColor(87, 166, 74)); 
     }
 }
 
@@ -131,7 +131,7 @@ void ShaderCodeHighlighter::highlightString(const QString &text) {
     QRegularExpressionMatchIterator it = stringExpression.globalMatch(text);
     while (it.hasNext()) {
         QRegularExpressionMatch match = it.next();
-        setFormat(match.capturedStart(), match.capturedLength(), Qt::darkRed); // 字符串高亮为深红色
+        setFormat(match.capturedStart(), match.capturedLength(), QColor(227, 179, 104)); 
     }
 }
 
