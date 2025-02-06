@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(ShaderCompiler VERSION 1.0)
+project(ShaderCross VERSION 1.0)
 
 # 设置编译器选项
 set(CMAKE_CXX_STANDARD 17)
@@ -35,7 +35,7 @@ set(RESOURCE_FILES
 qt5_add_resources(QRC_SOURCES ${RESOURCE_FILES})
 
 # 源文件
-add_executable(ShaderCompiler
+add_executable(ShaderCross
     src/main.cpp
     src/mainwindow.cpp
     src/mainwindow.h
@@ -57,7 +57,7 @@ add_executable(ShaderCompiler
 )
 
 # 链接Qt库
-target_link_libraries(ShaderCompiler PRIVATE
+target_link_libraries(ShaderCross PRIVATE
     Qt5::Widgets
 )
 
@@ -67,24 +67,30 @@ set(QT_BIN_PATH "${QT_INSTALL_PATH}/bin")
 set(QT_PLUGIN_PATH "${QT_INSTALL_PATH}/plugins")
 
 # 复制Qt运行时DLL到输出目录
-add_custom_command(TARGET ShaderCompiler POST_BUILD
+add_custom_command(TARGET ShaderCross POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${QT_BIN_PATH}/Qt5Widgets.dll
         ${QT_BIN_PATH}/Qt5Core.dll
         ${QT_BIN_PATH}/Qt5Gui.dll
-        $<TARGET_FILE_DIR:ShaderCompiler>
+        $<TARGET_FILE_DIR:ShaderCross>
 )
 
 # 复制 fxc 依赖工具到输出目录
-add_custom_command(TARGET ShaderCompiler POST_BUILD
+add_custom_command(TARGET ShaderCross POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${CMAKE_CURRENT_SOURCE_DIR}/external/fxc/fxc.exe
         ${CMAKE_CURRENT_SOURCE_DIR}/external/fxc/d3dcompiler_47.dll
-        $<TARGET_FILE_DIR:ShaderCompiler>
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/dxc/bin/x64/dxc.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/dxc/bin/x64/dxcompiler.dll
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/dxc/bin/x64/dxil.dll
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/glslang/glslang.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/glslang/glslangValidator.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv-cross/spirv-cross.exe
+        $<TARGET_FILE_DIR:ShaderCross>
 )
 
 # 安装配置
-install(TARGETS ShaderCompiler
+install(TARGETS ShaderCross
     RUNTIME DESTINATION bin
 )
 
