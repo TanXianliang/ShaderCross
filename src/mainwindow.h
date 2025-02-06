@@ -7,6 +7,7 @@
 #include <QtWidgets/QComboBox>
 #include <QtWidgets/QListWidget>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QToolButton>
 #include "fxcCompiler.h"
 #include "compilerSettingUI.h"
 #include <QSettings>
@@ -21,10 +22,16 @@ public:
     ~MainWindow();
 
 protected:
-    // 移除这些函数
-    // void mousePressEvent(QMouseEvent *event) override;
-    // void mouseMoveEvent(QMouseEvent *event) override;
-    // void mouseReleaseEvent(QMouseEvent *event) override;
+    // 自定义关闭及最小化
+    void windowclosed();
+    void windowmin();
+    //void paintEvent(QPaintEvent* event) override;
+
+    bool eventFilter(QObject *obj, QEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private slots:
     void onBrowseFile();
@@ -86,6 +93,16 @@ private:
 
     // 新增方法声明
     void updateCurrentCompilerSettings(const QString &compiler);
+
+    QToolButton *closeButton;
+    QToolButton *minButton;
+    QToolButton *maxButton;  // 添加最大化按钮
+    void updateButtonPositions();  // 添加新方法
+
+    QPoint mouseQPoint;
+    bool resizing;
+    Qt::Edges resizeEdge;
+    static const int RESIZE_MARGIN = 5;  // 边缘调整区域的宽度
 };
 
 #endif // MAINWINDOW_H 

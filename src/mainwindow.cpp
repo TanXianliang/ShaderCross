@@ -22,6 +22,7 @@
 #include <QtWidgets/QStatusBar>
 #include <QtCore/QTimer>
 #include <QtGui/QMouseEvent>
+#include <QtWidgets/QToolButton>
 #include "fxcCompiler.h"
 #include "compilerConfig.h"
 #include <QDebug>
@@ -31,6 +32,9 @@
 #include "glslangCompiler.h"
 #include "shaderCodeTextEdit.h"
 #include "glslangkgverCompiler.h"
+#include <QtGui/QPainter>
+#include <QtGui/QScreen>
+#include <QtGui/QGuiApplication>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -39,9 +43,16 @@ MainWindow::MainWindow(QWidget *parent)
     , lastGLSLCompiler("GLSLANG")  // 设置默认值
     , lastOpenDir(QDir::currentPath())  // 初始化为当前目录
     , compiler(new fxcCompiler(this))
+    , resizing(false)
 {
+    // 修改窗口标志，添加系统菜单和最小化最大化按钮的支持
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | 
+                  Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
+    //setAttribute(Qt::WA_TranslucentBackground);
+    //setWindowOpacity(1);
+
     // 设置程序图标
-    setWindowIcon(QIcon(":/resources/icons.jpg"));
+    setWindowIcon(QIcon(":/resources/icons/icons.jpg"));
     
     // 设置窗口标题
     setWindowTitle("ShaderCross");
@@ -51,6 +62,39 @@ MainWindow::MainWindow(QWidget *parent)
     setupShortcuts();
     applyTheme(isDarkTheme);
     loadSettings();  // 加载上次的设置
+
+    closeButton = new QToolButton(this);
+    minButton = new QToolButton(this);
+    maxButton = new QToolButton(this);  // 新增最大化按钮
+
+    QPixmap *closePix = new QPixmap(":/resources/icons/closeicon.png");
+    QPixmap *minPix = new QPixmap(":/resources/icons/minicon.png");
+    QPixmap *maxPix = new QPixmap(":/resources/icons/maxicon.png");  // 最大化图标
+    QPixmap *returnPix = new QPixmap(":/resources/icons/returnicon.png");  // 还原图标
+
+    closeButton->setIcon(*closePix);
+    minButton->setIcon(*minPix);
+    maxButton->setIcon(*maxPix);  // 默认显示最大化图标
+
+    updateButtonPositions();  // 初始化按钮位置
+
+    closeButton->setToolTip(tr("close"));
+    minButton->setToolTip(tr("minimum"));
+    maxButton->setToolTip(tr("maximize"));  // 设置提示文本
+    
+    connect(closeButton, &QToolButton::clicked, this, &MainWindow::windowclosed);
+    connect(minButton, &QToolButton::clicked, this, &MainWindow::windowmin);
+    connect(maxButton, &QToolButton::clicked, this, [=]() {  // 最大化/还原切换
+        if (isMaximized()) {
+            showNormal();
+            maxButton->setIcon(*maxPix);
+            maxButton->setToolTip(tr("maximize"));
+        } else {
+            showMaximized();
+            maxButton->setIcon(*returnPix);
+            maxButton->setToolTip(tr("restore"));
+        }
+    });
 
     // 连接编译器信号
     connect(compiler, &fxcCompiler::compilationFinished, this, [this](const QString &output) {
@@ -112,6 +156,21 @@ MainWindow::MainWindow(QWidget *parent)
         logEdit->setTextColor(Qt::red);
         logEdit->append(tr("Compilation failed"));
     });
+
+    // 启用鼠标追踪
+    setMouseTracking(true);
+    centralWidget()->setMouseTracking(true);
+}
+
+//为自定义的关闭及最小化提供实际功能
+void MainWindow::windowclosed()
+{
+    this->close();
+}
+
+void MainWindow::windowmin()
+{
+    this->showMinimized();
 }
 
 void MainWindow::setupUI()
@@ -302,22 +361,91 @@ void MainWindow::setupUI()
 
 void MainWindow::createMenus()
 {
-    QMenu *fileMenu = menuBar()->addMenu(tr("File"));
+    QMenuBar* bar = menuBar();
+    bar->installEventFilter(this);
+    
+    // 设置菜单栏可以拖动窗口
+    connect(bar, &QMenuBar::customContextMenuRequested, [=](const QPoint &pos) {
+        Q_UNUSED(pos);
+    });
+    
+    QMenu *fileMenu = bar->addMenu(tr("File"));
     fileMenu->addAction(tr("Open"), this, &MainWindow::onBrowseFile, QKeySequence::Open);
     fileMenu->addAction(tr("Save"), this, &MainWindow::onSaveResult, QKeySequence::Save);
     
-    QMenu *editMenu = menuBar()->addMenu(tr("Edit"));
+    QMenu *editMenu = bar->addMenu(tr("Edit"));
     editMenu->addAction(tr("Copy"), this, [this](){ outputEdit->copy(); }, QKeySequence::Copy);
     editMenu->addAction(tr("Paste"), this, [this](){ outputEdit->paste(); }, QKeySequence::Paste);
     
-    QMenu *buildMenu = menuBar()->addMenu(tr("Build"));
+    QMenu *buildMenu = bar->addMenu(tr("Build"));
     buildMenu->addAction(tr("Compile"), this, &MainWindow::onCompile, Qt::Key_F5);
 
-    QMenu *uiMenu = menuBar()->addMenu(tr("UI"));
+    QMenu *uiMenu = bar->addMenu(tr("UI"));
     uiMenu->addAction(tr("Reset Layout"), this, &MainWindow::onResetLayout);
     uiMenu->addAction(tr("Toggle Output Panel"), this, &MainWindow::onToggleOutput, Qt::Key_F12);
+    
     //uiMenu->addSeparator();
     //uiMenu->addAction(tr("Toggle Theme"), this, &MainWindow::onToggleTheme, QKeySequence(Qt::CTRL | Qt::Key_T));
+    
+    // 设置菜单栏鼠标事件追踪
+    bar->setMouseTracking(true);
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == menuBar()) {
+        static bool isDoubleClick = false;
+
+        switch (event->type()) {
+            case QEvent::MouseButtonPress: {
+                QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+                if (mouseEvent->button() == Qt::LeftButton) {
+                    mouseQPoint = mouseEvent->globalPos() - this->pos();
+                }
+                break;
+            }
+
+            case QEvent::MouseButtonDblClick: {
+                QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+                if (mouseEvent->button() == Qt::LeftButton) {
+                    isDoubleClick = true;
+                    if (isMaximized()) {
+                        showNormal();
+                        maxButton->setIcon(QIcon(":/resources/icons/maxicon.png"));
+                        maxButton->setToolTip(tr("maximize"));
+                    } else {
+                        showMaximized();
+                        maxButton->setIcon(QIcon(":/resources/icons/returnicon.png"));
+                        maxButton->setToolTip(tr("restore"));
+                    }
+                }
+                break;
+            }
+
+            case QEvent::MouseMove: {
+                QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+                if (!isDoubleClick && (mouseEvent->buttons() & Qt::LeftButton)) {
+                    if (isMaximized()) {
+                        // 在最大化状态下拖动时还原窗口
+                        double ratio = static_cast<double>(mouseEvent->globalPos().x()) / 
+                                     QGuiApplication::primaryScreen()->geometry().width();
+                        showNormal();
+                        mouseQPoint = QPoint(width() * ratio, mouseQPoint.y());
+                        maxButton->setIcon(QIcon(":/resources/icons/maxicon.png"));
+                        maxButton->setToolTip(tr("maximize"));
+                    }
+                    move(mouseEvent->globalPos() - mouseQPoint);
+                }
+                break;
+            }
+
+            case QEvent::MouseButtonRelease: {
+                isDoubleClick = false;
+                break;
+            }
+        }
+    }
+    return QMainWindow::eventFilter(obj, event);
 }
 
 void MainWindow::setupShortcuts()
@@ -1030,4 +1158,79 @@ void MainWindow::updateCurrentCompilerSettings(const QString &compiler)
     settings.setValue("shaderType", shaderType);
     settings.setValue("shaderModel", shaderModel);
     settings.setValue("outputType", outputType);
+}
+
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    QMainWindow::resizeEvent(event);
+    updateButtonPositions();
+}
+
+void MainWindow::updateButtonPositions()
+{
+    if (closeButton && minButton && maxButton) {
+        closeButton->setGeometry(frameGeometry().width() - 35, 5, 30, 30);
+        maxButton->setGeometry(frameGeometry().width() - 65, 5, 30, 30);  // 最大化按钮
+        minButton->setGeometry(frameGeometry().width() - 95, 5, 30, 30);  // 调整最小化按钮位置
+    }
+}
+
+void MainWindow::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        if (event->pos().y() <= RESIZE_MARGIN) {
+            resizing = true;
+            resizeEdge = Qt::TopEdge;
+        } else if (event->pos().y() >= height() - RESIZE_MARGIN) {
+            resizing = true;
+            resizeEdge = Qt::BottomEdge;
+        } else if (event->pos().x() <= RESIZE_MARGIN) {
+            resizing = true;
+            resizeEdge = Qt::LeftEdge;
+        } else if (event->pos().x() >= width() - RESIZE_MARGIN) {
+            resizing = true;
+            resizeEdge = Qt::RightEdge;
+        }
+        mouseQPoint = event->globalPos();
+    }
+}
+
+void MainWindow::mouseMoveEvent(QMouseEvent *event)
+{
+    if (resizing && (event->buttons() & Qt::LeftButton)) {
+        QPoint delta = event->globalPos() - mouseQPoint;
+        QRect geo = geometry();
+
+        if (resizeEdge & Qt::LeftEdge) {
+            geo.setLeft(geo.left() + delta.x());
+        }
+        if (resizeEdge & Qt::RightEdge) {
+            geo.setRight(geo.right() + delta.x());
+        }
+        if (resizeEdge & Qt::TopEdge) {
+            geo.setTop(geo.top() + delta.y());
+        }
+        if (resizeEdge & Qt::BottomEdge) {
+            geo.setBottom(geo.bottom() + delta.y());
+        }
+
+        setGeometry(geo);
+        mouseQPoint = event->globalPos();
+    } else {
+        // 更新鼠标样式
+        if (event->pos().y() <= RESIZE_MARGIN || event->pos().y() >= height() - RESIZE_MARGIN) {
+            setCursor(Qt::SizeVerCursor);
+        } else if (event->pos().x() <= RESIZE_MARGIN || event->pos().x() >= width() - RESIZE_MARGIN) {
+            setCursor(Qt::SizeHorCursor);
+        } else {
+            setCursor(Qt::ArrowCursor);
+        }
+    }
+}
+
+void MainWindow::mouseReleaseEvent(QMouseEvent *event)
+{
+    resizing = false;
+    resizeEdge = Qt::Edge();
+    QMainWindow::mouseReleaseEvent(event);
 } 
