@@ -338,7 +338,6 @@ void MainWindow::setupUI()
     
     // 日志面板
     QHBoxLayout *logPanelLayout = new QHBoxLayout();
-    logPanelLayout->addWidget(new QLabel(tr("Log:")));
     logEdit = new QTextEdit(this);
     logEdit->setReadOnly(true);
     logEdit->setMaximumHeight(100);

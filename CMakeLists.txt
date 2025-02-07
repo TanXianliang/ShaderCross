@@ -36,13 +36,11 @@ qt5_add_resources(QRC_SOURCES ${RESOURCE_FILES})
 
 # 设置 Windows 子系统
 if(WIN32)
-    if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
-    endif()
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 endif()
 
-# 源文件
-add_executable(ShaderCross
+# 源文件 - 所有配置都使用 WIN32
+add_executable(ShaderCross WIN32   
     src/main.cpp
     src/mainwindow.cpp
     src/mainwindow.h
