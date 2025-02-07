@@ -65,6 +65,12 @@ add_executable(ShaderCross WIN32
     ${QRC_SOURCES}
 )
 
+# 设置可执行文件的工作目录为其所在目录
+set_target_properties(ShaderCross PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:ShaderCross>"
+    VS_DEBUGGER_COMMAND "$<TARGET_FILE:ShaderCross>"
+)
+
 # 链接Qt库
 target_link_libraries(ShaderCross PRIVATE
     Qt5::Widgets
@@ -97,6 +103,14 @@ add_custom_command(TARGET ShaderCross POST_BUILD
         ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv-cross/spirv-cross.exe
         ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv-cross/spirv-dis.exe
         $<TARGET_FILE_DIR:ShaderCross>
+)
+
+# 复制依赖文件和目录
+add_custom_command(TARGET ShaderCross POST_BUILD
+    # 复制 glslkgver 整个目录
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/glslkgver"
+        "$<TARGET_FILE_DIR:ShaderCross>/external/glslkgver"
 )
 
 # 安装配置

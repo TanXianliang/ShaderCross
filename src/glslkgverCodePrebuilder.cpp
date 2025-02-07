@@ -4,13 +4,51 @@
 GlslKgverCodePrebuilder::GlslKgverCodePrebuilder(const QStringList &includePaths) 
     : includePaths(includePaths), includeDepth(0) {}
 
+QString LoadCginc(const QString& strPath)
+{
+    std::string source;
+	QString fullPath = QDir::currentPath() + "/" + strPath;
+	FILE* fp = fopen(fullPath.toStdString().c_str(), "rb");
+	if(fp)
+	{
+		fseek(fp, 0, SEEK_END);
+		int len = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+
+		unsigned char bomHeader[3];
+		unsigned char dest[3] = {0xef, 0xbb, 0xbf};
+
+		fread(bomHeader, sizeof(char) * 3, 1, fp);
+
+		if (memcmp(bomHeader, dest, 3))
+		{
+			fseek(fp, 0, SEEK_SET);
+		}
+		else
+		{
+			len -= 3;
+		}
+
+	
+		source.resize(len + 1, '\0');
+		fread(&source[0], len, 1, fp);
+		fclose(fp);
+	}
+	return QString(source.c_str());
+}
+
+QString LoadBaseMacroInc()
+{
+	return LoadCginc("external/glslkgver/macros.cginc");
+}
+
 // 解析着色器代码
 QString GlslKgverCodePrebuilder::parse(const QString &shaderCode, const QString &startSection) {
     // 解析代码块
     initCodeSections(mainFile, shaderCode);
     QString content = parseCodeSections(mainFile, startSection, 0);
-
-    content = replaceAutoBind(content);
+    QString contentBaseMacroInc = LoadBaseMacroInc() + "\n";
+    content = replaceAutoBind(contentBaseMacroInc + content);
     return content;
 }
 
@@ -27,7 +65,14 @@ QString GlslKgverCodePrebuilder::handleInclude(const CodeIncludeFile &currentFil
     }
 
     QString filePath = parts[1].mid(parts[1].indexOf('"') + 1, parts[1].lastIndexOf('"') - parts[1].indexOf('"') - 1);
-    filePath.toLower();
+    filePath = filePath.toLower();
+
+    // 检查是否为cginc文件
+    if (filePath.endsWith(".cginc")) {
+        QString fileName = filePath.mid(filePath.lastIndexOf('/') + 1);
+        QString cgincPath = "external/glslkgver/" + fileName;
+        return LoadCginc(cgincPath) + "\n";
+    }
 
     QString sectionName;
     if (parts.size() > 2) {
