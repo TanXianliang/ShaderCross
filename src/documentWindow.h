@@ -20,7 +20,7 @@ public:
     explicit DocumentWindow(QWidget *parent = nullptr, const QString &documentTitle = "untitled");
     ~DocumentWindow();
 
-private slots:
+public slots:
     void compile();
     void addIncludePath();
     void removeIncludePath();
@@ -31,6 +31,8 @@ private slots:
     void updateCurrentCompilerSettings(const QString &compiler);
     void onBrowseFile();
     void loadFileContent(const QString &filePath);
+    void undo();
+    void redo();
 
 private:
     void setupUI();
@@ -63,7 +65,6 @@ private:
 
     // 编译器设置
     CompilerSettingUI *compilerSettingUI;
-    QPushButton *compileButton; // 编译按钮
 
     // 界面操作记录
     QString lastHLSLCompiler;
@@ -71,4 +72,4 @@ private:
     QString lastOpenDir;
 };
 
-#endif // DOCUMENTWINDOW_H
+#endif

@@ -32,139 +32,149 @@ void DocumentWindow::setupUI()
 {
     QWidget *centralWidget = new QWidget(this);
     QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
+    mainLayout->setSpacing(12);  // 恢复间距
+    mainLayout->setContentsMargins(12, 12, 12, 12);  // 恢复边距
 
-    // 创建顶部布局
-    QHBoxLayout *topLayout = new QHBoxLayout();
+    // 原有的界面布局
+    QWidget *contentWidget = new QWidget(this);
+    QHBoxLayout *contentLayout = new QHBoxLayout(contentWidget);
+    mainLayout->addWidget(contentWidget);
 
-    // 左侧设置面板
-    QVBoxLayout *leftPanelLayout = new QVBoxLayout();
+    // Left panel
+    QWidget *leftPanel = new QWidget(this);
+    QVBoxLayout *leftLayout = new QVBoxLayout(leftPanel);
+    leftLayout->setSpacing(12);  // 增加垂直间距
     
-    // 语言选择
-    QHBoxLayout *languageLayout = new QHBoxLayout();
-    languageLayout->addWidget(new QLabel(tr("Language:")));
+    // Input settings area
+    QGroupBox *inputGroup = new QGroupBox(tr("Shader Input"), this);
+    QVBoxLayout *inputLayout = new QVBoxLayout(inputGroup);
+    inputLayout->setSpacing(8);
+    
+    // Language selection
+    QHBoxLayout *langLayout = new QHBoxLayout();
     languageCombo = new QComboBox(this);
-    languageCombo->addItems({"HLSL", "GLSL"});
-    languageLayout->addWidget(languageCombo);
-    leftPanelLayout->addLayout(languageLayout);
 
-    // 编码选择
+    QStringList languages = LanguageConfig::instance().getSupportedLanguages();
+    languageCombo->addItems(languages);
+    langLayout->addWidget(new QLabel(tr("Shader Language:")));
+    langLayout->addWidget(languageCombo);
+    inputLayout->addLayout(langLayout);
+    
+    // File selection
+    QHBoxLayout *fileLayout = new QHBoxLayout();
+    filePathEdit = new QLineEdit(this);
+    browseButton = new QPushButton(QIcon(), tr("Browse"), this);
+    browseButton->setObjectName("browseButton");  // 添加对象名
+    fileLayout->addWidget(new QLabel(tr("Shader Path:")));
+    fileLayout->addWidget(filePathEdit);
+    fileLayout->addWidget(browseButton);
+    inputLayout->addLayout(fileLayout);
+
+    // 添加编码选择
     QHBoxLayout *encodingLayout = new QHBoxLayout();
     encodingLayout->addWidget(new QLabel(tr("Encoding:")));
     encodingCombo = new QComboBox(this);
-    encodingCombo->addItems({"UTF-8", "GB2312", "GBK"});
+    encodingCombo->addItems(QStringList() << "UTF-8" << "GB18030" << "UTF-16" << "System");
+    encodingCombo->setCurrentText("UTF-8");
     encodingLayout->addWidget(encodingCombo);
-    leftPanelLayout->addLayout(encodingLayout);
+    inputLayout->addLayout(encodingLayout);
 
-    // 编译器设置
-    compilerSettingUI = new CompilerSettingUI(this);
-    leftPanelLayout->addWidget(compilerSettingUI);
-
-    // 包含路径
+    // 添加文件内容显示区域
+    inputEdit = new ShaderCodeTextEdit(this);
+    inputEdit->setReadOnly(false);
+    inputLayout->addWidget(inputEdit, 1);  // 添加拉伸因子1
+    
+    // 添加包含路径设置
     QGroupBox *includeGroup = new QGroupBox(tr("Include Paths"), this);
     QVBoxLayout *includeLayout = new QVBoxLayout(includeGroup);
+    
+    // 包含路径列表
     includePathList = new QListWidget(this);
+    includePathList->setMinimumHeight(48);  // 最小高度为2行 (24px * 2)
+    includePathList->setMaximumHeight(96);  // 最大高度为4行 (24px * 4)
+
     includeLayout->addWidget(includePathList);
     
-    QHBoxLayout *includeButtonLayout = new QHBoxLayout();
-    addIncludeButton = new QPushButton(tr("Add"), this);
-    removeIncludeButton = new QPushButton(tr("Remove"), this);
+    // 添加/删除包含路径按钮
+    QHBoxLayout *includeButtonLayout = new QHBoxLayout();  // 创建水平布局
+    addIncludeButton = new QPushButton(QIcon(), tr("Add Path"), this);
+    removeIncludeButton = new QPushButton(QIcon(), tr("Remove Path"), this);
     includeButtonLayout->addWidget(addIncludeButton);
     includeButtonLayout->addWidget(removeIncludeButton);
-    includeLayout->addLayout(includeButtonLayout);
-    leftPanelLayout->addWidget(includeGroup);
-
-    // 宏定义
-    QGroupBox *macroGroup = new QGroupBox(tr("Macros"), this);
+    includeLayout->addLayout(includeButtonLayout);  // 将按钮布局添加到主布局
+    
+    // 添加宏定义设置
+    QGroupBox *macroGroup = new QGroupBox(tr("Macro Definitions"), this);
     QVBoxLayout *macroLayout = new QVBoxLayout(macroGroup);
+    
+    // 宏定义列表
     macroList = new QListWidget(this);
+    macroList->setMinimumHeight(48);  // 最小高度为2行
+    macroList->setMaximumHeight(96);  // 最大高度为4行 (24px * 4)
+
     macroLayout->addWidget(macroList);
     
-    QHBoxLayout *macroButtonLayout = new QHBoxLayout();
-    addMacroButton = new QPushButton(tr("Add"), this);
-    removeMacroButton = new QPushButton(tr("Remove"), this);
+    // 添加/删除宏按钮
+    QHBoxLayout *macroButtonLayout = new QHBoxLayout();  // 创建水平布局
+    addMacroButton = new QPushButton(QIcon(), tr("Add Macro"), this);
+    removeMacroButton = new QPushButton(QIcon(), tr("Remove Macro"), this);
     macroButtonLayout->addWidget(addMacroButton);
     macroButtonLayout->addWidget(removeMacroButton);
-    macroLayout->addLayout(macroButtonLayout);
-    leftPanelLayout->addWidget(macroGroup);
-
-    // 编译按钮
-    compileButton = new QPushButton(tr("Compile"), this);
-    leftPanelLayout->addWidget(compileButton);
-
-    // 添加左侧面板到顶部布局
-    topLayout->addLayout(leftPanelLayout);
-
-    // 创建右侧编辑器和输出区域
-    QVBoxLayout *rightPanelLayout = new QVBoxLayout();
+    macroLayout->addLayout(macroButtonLayout);  // 将按钮布局添加到主布局
     
-    // 文件路径输入区域
-    QGroupBox *inputGroup = new QGroupBox(tr("Input"), this);
-    QVBoxLayout *inputLayout = new QVBoxLayout(inputGroup);
+    leftLayout->addWidget(inputGroup, 1);
+    leftLayout->addWidget(includeGroup);
+    leftLayout->addWidget(macroGroup);
     
-    QHBoxLayout *filePathLayout = new QHBoxLayout();
-    filePathEdit = new QLineEdit(this);
-    filePathEdit->setReadOnly(true);
-    browseButton = new QPushButton(tr("Browse"), this);
-    filePathLayout->addWidget(filePathEdit);
-    filePathLayout->addWidget(browseButton);
-    inputLayout->addLayout(filePathLayout);
-
-    // 输入编辑器
-    inputEdit = new ShaderCodeTextEdit(this);
-    inputLayout->addWidget(inputEdit);
-    rightPanelLayout->addWidget(inputGroup);
-
-    // 输出和日志
-    QSplitter *outputSplitter = new QSplitter(Qt::Horizontal, this);
+    // Right panel
+    QWidget *rightPanel = new QWidget(this);
+    QVBoxLayout *rightLayout = new QVBoxLayout(rightPanel);
+    rightLayout->setSpacing(12);
     
+    // 使用新的编译器设置UI
+    compilerSettingUI = new CompilerSettingUI(this);
+    rightLayout->addWidget(compilerSettingUI);
+
+    // Output area
     QGroupBox *outputGroup = new QGroupBox(tr("Output"), this);
     QVBoxLayout *outputLayout = new QVBoxLayout(outputGroup);
-    outputEdit = new QTextEdit(this);
-    outputLayout->addWidget(outputEdit);
-    outputSplitter->addWidget(outputGroup);
     
-    QGroupBox *logGroup = new QGroupBox(tr("Log"), this);
-    QVBoxLayout *logLayout = new QVBoxLayout(logGroup);
+    // 编译输出
+    outputEdit = new QTextEdit(this);
+    outputEdit->setReadOnly(true);
+    outputLayout->addWidget(outputEdit);
+    
+    // 日志面板
+    QHBoxLayout *logPanelLayout = new QHBoxLayout();
     logEdit = new QTextEdit(this);
-    logLayout->addWidget(logEdit);
-    outputSplitter->addWidget(logGroup);
-
-    rightPanelLayout->addWidget(outputSplitter);
-
-    // 添加右侧面板到顶部布局
-    topLayout->addLayout(rightPanelLayout, 1);
-
-    // 添加顶部布局到主布局
-    mainLayout->addLayout(topLayout);
-
+    logEdit->setReadOnly(true);
+    logEdit->setMaximumHeight(100);
+    logEdit->setStyleSheet("QTextEdit { font-family: 'Consolas', monospace; }");
+    logPanelLayout->addWidget(logEdit);
+    outputLayout->addLayout(logPanelLayout);
+    
+    rightLayout->addWidget(outputGroup);
+    
+    // 添加面板到主布局
+    contentLayout->addWidget(leftPanel);
+    contentLayout->addWidget(rightPanel);
+    
+    // 设置中心部件
     setCentralWidget(centralWidget);
-    resize(1200, 800);
+
+    inputEdit->setShaderLanguage("HLSL");
 }
 
 void DocumentWindow::setupConnections()
 {
-    // 编译按钮
-    connect(compileButton, &QPushButton::clicked, this, &DocumentWindow::compile);
-
     // 包含路径按钮
     connect(addIncludeButton, &QPushButton::clicked, this, &DocumentWindow::addIncludePath);
     connect(removeIncludeButton, &QPushButton::clicked, this, &DocumentWindow::removeIncludePath);
-    connect(includePathList, &QListWidget::itemSelectionChanged, this, [this]() {
-        removeIncludeButton->setEnabled(!includePathList->selectedItems().isEmpty());
-    });
 
     // 宏定义按钮
     connect(addMacroButton, &QPushButton::clicked, this, &DocumentWindow::addMacro);
     connect(removeMacroButton, &QPushButton::clicked, this, &DocumentWindow::removeMacro);
-    connect(macroList, &QListWidget::itemSelectionChanged, this, [this]() {
-        removeMacroButton->setEnabled(!macroList->selectedItems().isEmpty());
-    });
-
-    // 语言切换
-    connect(languageCombo, &QComboBox::currentTextChanged, this, [this](const QString &language) {
-        compilerSettingUI->onLanguageChanged(language);
-        inputEdit->setShaderLanguage(language);
-    });
+    
 
     // 编译器设置变更
     connect(compilerSettingUI, &CompilerSettingUI::compilerChanged, 
@@ -177,6 +187,47 @@ void DocumentWindow::setupConnections()
             loadFileContent(filePathEdit->text());
         }
     });
+
+    // 监听列表内容变化，动态调整高度
+    connect(includePathList, &QListWidget::itemSelectionChanged, this, [this]() {
+        removeIncludeButton->setEnabled(!includePathList->selectedItems().isEmpty());
+    });
+
+    connect(includePathList->model(), &QAbstractItemModel::rowsInserted, this, [this]() {
+        updateIncludeListHeight();
+    });
+    connect(includePathList->model(), &QAbstractItemModel::rowsRemoved, this, [this]() {
+        updateIncludeListHeight();
+    });
+
+    // 监听列表内容变化，动态调整高度
+    connect(macroList, &QListWidget::itemSelectionChanged, this, [this]() {
+        removeMacroButton->setEnabled(!macroList->selectedItems().isEmpty());
+    });
+
+    connect(macroList->model(), &QAbstractItemModel::rowsInserted, this, [this]() {
+        updateMacroListHeight();
+    });
+    connect(macroList->model(), &QAbstractItemModel::rowsRemoved, this, [this]() {
+        updateMacroListHeight();
+    });
+
+    // 连接语言切换信号
+    connect(languageCombo, &QComboBox::currentTextChanged, this, [this](const QString &language) {
+        // 更新编译器设置
+        compilerSettingUI->onLanguageChanged(language);
+
+        // 保存当前编译器选择
+        QString currentCompiler = compilerSettingUI->getCurrentCompiler();
+        if (language == "HLSL") {
+            lastGLSLCompiler = currentCompiler;
+        } else {
+            lastHLSLCompiler = currentCompiler;
+        }
+    });
+
+    // 连接编译按钮信号
+    connect(compilerSettingUI, &CompilerSettingUI::buildClicked, this, &DocumentWindow::compile);
 }
 
 void DocumentWindow::compile()
@@ -574,6 +625,20 @@ void DocumentWindow::loadFileContent(const QString &filePath)
         languageCombo->setCurrentText("HLSL");
     } else if (suffix == "glsl" || suffix == "vert" || suffix == "frag" || suffix == "comp") {
         languageCombo->setCurrentText("GLSL");
+    }
+}
+
+void DocumentWindow::undo()
+{
+    if (inputEdit) {
+        inputEdit->undo();
+    }
+}
+
+void DocumentWindow::redo()
+{
+    if (inputEdit) {
+        inputEdit->redo();
     }
 }
 

@@ -12,6 +12,7 @@
 #include "compilerSettingUI.h"
 #include <QSettings>
 #include "shaderCodeTextEdit.h"
+#include "documentWindow.h"
 
 class MainWindow : public QMainWindow
 {
@@ -34,23 +35,19 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
 
 private slots:
-    void onBrowseFile();
-    void onCompile();
+    void onNewDocument();
     void onSaveResult();
     void onShowDisassembly();
     void onResetLayout();
-    void onToggleOutput();
     void onToggleTheme();
-    void onAddIncludePath();
-    void onRemoveIncludePath();
-    void onAddMacro();
-    void onRemoveMacro();
-    void showMacroDialog();
-    void onSaveSettings();
 
 private:
     void createMenus();
     void applyTheme(bool dark);
+    void setupUI();
+    QString settingsFilePath() const;
+    void loadSettings();    
+    void saveSettings();
 
     // 主界面UI组件
     QToolButton *closeButton;
@@ -64,42 +61,10 @@ private:
     static const int RESIZE_MARGIN = 5;  // 边缘调整区域的宽度
     bool isDarkTheme;
 
-private:
-    // ShaderCode输入界面
-    QLineEdit *filePathEdit;
-    QPushButton *browseButton;
-    ShaderCodeTextEdit *inputEdit;
-    QComboBox *encodingCombo;
-    QComboBox *languageCombo;
+    QVBoxLayout *mainLayout; // 主布局
 
-    QListWidget *includePathList;  // 包含路径
-    QPushButton *addIncludeButton;
-    QPushButton *removeIncludeButton;
-
-    QListWidget *macroList;
-    QPushButton *addMacroButton;
-    QPushButton *removeMacroButton;
-    
-    // 编译输出界面
-    QTextEdit *outputEdit;
-    QTextEdit *logEdit;
-
-    // 编译器设置
-    CompilerSettingUI *compilerSettingUI;
-    QPushButton *buildButton;  // 构建按钮
-
-    // 界面操作记录
-    QString lastOpenDir;
-    QString lastHLSLCompiler;
-    QString lastGLSLCompiler;
-
-    void setupUI();
-    void loadFileContent(const QString &fileName);
-    void updateIncludeListHeight();
-    void updateMacroListHeight();
-    void loadSettings();
-    QString settingsFilePath() const;
-    void updateCurrentCompilerSettings(const QString &compiler);
+    // 添加 DocumentWindow 相关
+    DocumentWindow *currentDocument;
 };
 
 #endif // MAINWINDOW_H 
