@@ -90,6 +90,7 @@ add_custom_command(TARGET ShaderCross POST_BUILD
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glslang/glslang.exe
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glslang/glslangValidator.exe
         ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv-cross/spirv-cross.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv-cross/spirv-dis.exe
         $<TARGET_FILE_DIR:ShaderCross>
 )
 
