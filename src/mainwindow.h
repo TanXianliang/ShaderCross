@@ -49,50 +49,10 @@ private slots:
     void onSaveSettings();
 
 private:
-    // UI 组件
-    QLineEdit *filePathEdit;
-    QPushButton *browseButton;
-    ShaderCodeTextEdit *inputEdit;
-    QTextEdit *outputEdit;
-    QTextEdit *logEdit;
-    QComboBox *encodingCombo;
-    QComboBox *languageCombo;
-    
-    QListWidget *includePathList;
-    QPushButton *addIncludeButton;
-    QPushButton *removeIncludeButton;
-
-    QListWidget *macroList;
-    QPushButton *addMacroButton;
-    QPushButton *removeMacroButton;
-
-    CompilerSettingUI *compilerSettingUI;  // 新增编译器设置UI
-    fxcCompiler *compiler;
-
-    bool isDarkTheme;
-    QString lastOpenDir;
-    QString lastHLSLCompiler;
-    QString lastGLSLCompiler;
-
-    void setupUI();
     void createMenus();
-    void loadFileContent(const QString &fileName);
     void applyTheme(bool dark);
-    void updateIncludeListHeight();
-    void updateMacroListHeight();
-    void loadSettings();
-    QString settingsFilePath() const;
 
-    // 可能需要的其他编译器相关控件
-    QComboBox *targetProfileCombo;  // shader模型选择
-    QComboBox *shaderTypeCombo;  // shader类型选择
-    QComboBox *shaderModelCombo;  // shader模型选择
-    QComboBox *outputTypeCombo;  // 输出类型选择
-    QPushButton *buildButton;  // 构建按钮
-
-    // 新增方法声明
-    void updateCurrentCompilerSettings(const QString &compiler);
-
+    // 主界面UI组件
     QToolButton *closeButton;
     QToolButton *minButton;
     QToolButton *maxButton;  // 添加最大化按钮
@@ -102,6 +62,44 @@ private:
     bool resizing;
     Qt::Edges resizeEdge;
     static const int RESIZE_MARGIN = 5;  // 边缘调整区域的宽度
+    bool isDarkTheme;
+
+private:
+    // ShaderCode输入界面
+    QLineEdit *filePathEdit;
+    QPushButton *browseButton;
+    ShaderCodeTextEdit *inputEdit;
+    QComboBox *encodingCombo;
+    QComboBox *languageCombo;
+
+    QListWidget *includePathList;  // 包含路径
+    QPushButton *addIncludeButton;
+    QPushButton *removeIncludeButton;
+
+    QListWidget *macroList;
+    QPushButton *addMacroButton;
+    QPushButton *removeMacroButton;
+    
+    // 编译输出界面
+    QTextEdit *outputEdit;
+    QTextEdit *logEdit;
+
+    // 编译器设置
+    CompilerSettingUI *compilerSettingUI;
+    QPushButton *buildButton;  // 构建按钮
+
+    // 界面操作记录
+    QString lastOpenDir;
+    QString lastHLSLCompiler;
+    QString lastGLSLCompiler;
+
+    void setupUI();
+    void loadFileContent(const QString &fileName);
+    void updateIncludeListHeight();
+    void updateMacroListHeight();
+    void loadSettings();
+    QString settingsFilePath() const;
+    void updateCurrentCompilerSettings(const QString &compiler);
 };
 
 #endif // MAINWINDOW_H 

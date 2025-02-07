@@ -1,0 +1,74 @@
+#ifndef DOCUMENTWINDOW_H
+#define DOCUMENTWINDOW_H
+
+#include <QMainWindow>
+#include <QString>
+#include <QFile>
+#include <QFileInfo>
+#include <QComboBox>
+#include <QListWidget>
+#include <QPushButton>
+#include <QTextEdit>
+#include "shaderCodeTextEdit.h"
+#include "compilerSettingUI.h"
+
+class DocumentWindow : public QMainWindow
+{
+    Q_OBJECT
+
+public:
+    explicit DocumentWindow(QWidget *parent = nullptr, const QString &documentTitle = "untitled");
+    ~DocumentWindow();
+
+private slots:
+    void compile();
+    void addIncludePath();
+    void removeIncludePath();
+    void addMacro();
+    void removeMacro();
+    void updateIncludeListHeight();
+    void updateMacroListHeight();
+    void updateCurrentCompilerSettings(const QString &compiler);
+    void onBrowseFile();
+    void loadFileContent(const QString &filePath);
+
+private:
+    void setupUI();
+    void setupConnections();
+    QString settingsFilePath() const;
+    void loadSettings();
+    void saveSettings();
+
+private:
+    QString documentWindowTitle;
+
+    // ShaderCode输入界面
+    QLineEdit *filePathEdit;
+    QPushButton *browseButton;
+    QComboBox *languageCombo;
+    QComboBox *encodingCombo;
+    ShaderCodeTextEdit *inputEdit;
+
+    QListWidget *includePathList; // 包含路径
+    QPushButton *addIncludeButton;
+    QPushButton *removeIncludeButton;
+
+    QListWidget *macroList; // 宏定义
+    QPushButton *addMacroButton;
+    QPushButton *removeMacroButton;
+
+    // 编译输出界面
+    QTextEdit *outputEdit;
+    QTextEdit *logEdit;
+
+    // 编译器设置
+    CompilerSettingUI *compilerSettingUI;
+    QPushButton *compileButton; // 编译按钮
+
+    // 界面操作记录
+    QString lastHLSLCompiler;
+    QString lastGLSLCompiler;
+    QString lastOpenDir;
+};
+
+#endif // DOCUMENTWINDOW_H

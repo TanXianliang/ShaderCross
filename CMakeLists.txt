@@ -62,6 +62,8 @@ add_executable(ShaderCross WIN32
     src/compilerSettingUI.cpp
     src/shaderCodeTextEdit.h
     src/shaderCodeTextEdit.cpp
+    src/documentWindow.h
+    src/documentWindow.cpp
     ${QRC_SOURCES}
 )
 

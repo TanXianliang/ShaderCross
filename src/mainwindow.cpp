@@ -42,7 +42,6 @@ MainWindow::MainWindow(QWidget *parent)
     , lastHLSLCompiler("DXC")      // 设置默认值
     , lastGLSLCompiler("GLSLANG")  // 设置默认值
     , lastOpenDir(QDir::currentPath())  // 初始化为当前目录
-    , compiler(new fxcCompiler(this))
     , resizing(false)
 {
     // 修改窗口标志，添加系统菜单和最小化最大化按钮的支持
@@ -95,21 +94,6 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 
-    // 连接编译器信号
-    connect(compiler, &fxcCompiler::compilationFinished, this, [this](const QString &output) {
-        outputEdit->setTextColor(Qt::green);
-        outputEdit->append(tr("Compilation succeeded:\n") + output);
-        logEdit->setTextColor(Qt::green);
-        logEdit->append(tr("Compilation succeeded"));
-    });
-
-    connect(compiler, &fxcCompiler::compilationError, this, [this](const QString &error) {
-        outputEdit->setTextColor(Qt::red);
-        outputEdit->append(tr("Compilation error:\n") + error);
-        logEdit->setTextColor(Qt::red);
-        logEdit->append(tr("Compilation failed"));
-    });
-
     // 连接编译器设置变更信号
     connect(compilerSettingUI, &CompilerSettingUI::compilerChanged, this, [this](const QString &compiler) {
         if (languageCombo->currentText() == "HLSL") {
@@ -120,40 +104,6 @@ MainWindow::MainWindow(QWidget *parent)
         // 更新当前编译器设置
         updateCurrentCompilerSettings(compiler);
         inputEdit->setShaderLanguage(languageCombo->currentText()); // 更新输入编辑器语言
-    });
-
-    // 在 MainWindow 类中添加 glslangCompiler 的实例
-    glslangCompiler *glslangCompilerInstance = new glslangCompiler(this);
-
-    // 连接信号
-    connect(glslangCompilerInstance, &glslangCompiler::compilationFinished, this, [this](const QString &output) {
-        outputEdit->setTextColor(Qt::green);
-        outputEdit->append(tr("Compilation succeeded:\n") + output);
-        logEdit->setTextColor(Qt::green);
-        logEdit->append(tr("Compilation succeeded"));
-    });
-
-    connect(glslangCompilerInstance, &glslangCompiler::compilationError, this, [this](const QString &error) {
-        outputEdit->setTextColor(Qt::red);
-        outputEdit->append(tr("Compilation error:\n") + error);
-        logEdit->setTextColor(Qt::red);
-        logEdit->append(tr("Compilation failed"));
-    });
-
-    // 连接 glslangkgverCompiler 的信号
-    glslangkgverCompiler *glslangkgverCompilerInstance = new glslangkgverCompiler(this);
-    connect(glslangkgverCompilerInstance, &glslangkgverCompiler::compilationFinished, this, [this](const QString &output) {
-        outputEdit->setTextColor(Qt::green);
-        outputEdit->append(tr("Compilation succeeded:\n") + output);
-        logEdit->setTextColor(Qt::green);
-        logEdit->append(tr("Compilation succeeded"));
-    });
-
-    connect(glslangkgverCompilerInstance, &glslangkgverCompiler::compilationError, this, [this](const QString &error) {
-        outputEdit->setTextColor(Qt::red);
-        outputEdit->append(tr("Compilation error:\n") + error);
-        logEdit->setTextColor(Qt::red);
-        logEdit->append(tr("Compilation failed"));
     });
 
     // 启用鼠标追踪
@@ -516,6 +466,13 @@ void MainWindow::onCompile()
             outputEdit->append(tr("Compilation error:\n") + error);
             logEdit->setTextColor(Qt::red);
             logEdit->append(tr("Compilation failed"));
+        });
+
+        connect(fxcCompilerInstance, &fxcCompiler::compilationWarning, this, [this](const QString &warning) {
+            outputEdit->setTextColor(Qt::yellow);
+            outputEdit->append(tr("Compilation warning:\n") + warning);
+            logEdit->setTextColor(Qt::yellow);
+            logEdit->append(tr("Compilation warning"));
         });
 
         // 调用 fxcCompiler 进行编译
