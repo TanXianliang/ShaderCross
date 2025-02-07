@@ -28,6 +28,70 @@ DocumentWindow::DocumentWindow(QWidget *parent, const QString &documentTitle)
     loadSettings();
 }
 
+ // Start of Selection
+DocumentWindow::~DocumentWindow()
+{
+    saveSettings();
+
+    // 销毁所有UI控件
+    if (filePathEdit) {
+        delete filePathEdit;
+        filePathEdit = nullptr;
+    }
+    if (browseButton) {
+        delete browseButton;
+        browseButton = nullptr;
+    }   
+    if (languageCombo) {
+        delete languageCombo;
+        languageCombo = nullptr;
+    }
+    if (encodingCombo) {
+        delete encodingCombo;
+        encodingCombo = nullptr;
+    }
+    if (inputEdit) {
+        delete inputEdit;
+        inputEdit = nullptr;
+    }
+    if (includePathList) {
+        delete includePathList;
+        includePathList = nullptr;
+    }
+    if (addIncludeButton) {
+        delete addIncludeButton;
+        addIncludeButton = nullptr;
+    }
+    if (removeIncludeButton) {
+        delete removeIncludeButton;
+        removeIncludeButton = nullptr;
+    }
+    if (macroList) {
+        delete macroList;
+        macroList = nullptr;
+    }
+    if (addMacroButton) {
+        delete addMacroButton;
+        addMacroButton = nullptr;
+    }
+    if (removeMacroButton) {
+        delete removeMacroButton;
+        removeMacroButton = nullptr;
+    }
+    if (outputEdit) {
+        delete outputEdit;
+        outputEdit = nullptr;
+    }
+    if (logEdit) {
+        delete logEdit;
+        logEdit = nullptr;
+    }
+    if (compilerSettingUI) {
+        delete compilerSettingUI;
+        compilerSettingUI = nullptr;
+    }
+}
+
 void DocumentWindow::setupUI()
 {
     QWidget *centralWidget = new QWidget(this);
@@ -640,10 +704,5 @@ void DocumentWindow::redo()
     if (inputEdit) {
         inputEdit->redo();
     }
-}
-
-DocumentWindow::~DocumentWindow()
-{
-    saveSettings();
 }
 
