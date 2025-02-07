@@ -76,7 +76,6 @@ private:
 
     void setupUI();
     void createMenus();
-    void setupShortcuts();
     void loadFileContent(const QString &fileName);
     void applyTheme(bool dark);
     void updateIncludeListHeight();

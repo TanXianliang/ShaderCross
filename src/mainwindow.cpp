@@ -59,7 +59,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     setupUI();
     createMenus();
-    setupShortcuts();
     applyTheme(isDarkTheme);
     loadSettings();  // 加载上次的设置
 
@@ -208,7 +207,7 @@ void MainWindow::setupUI()
     // File selection
     QHBoxLayout *fileLayout = new QHBoxLayout();
     filePathEdit = new QLineEdit(this);
-    browseButton = new QPushButton(QIcon(":/resources/icons/browse.svg"), tr("Browse"), this);
+    browseButton = new QPushButton(QIcon(), tr("Browse"), this);
     browseButton->setObjectName("browseButton");  // 添加对象名
     fileLayout->addWidget(new QLabel(tr("Shader Path:")));
     fileLayout->addWidget(filePathEdit);
@@ -257,8 +256,8 @@ void MainWindow::setupUI()
     
     // 添加/删除包含路径按钮
     QHBoxLayout *includeButtonLayout = new QHBoxLayout();  // 创建水平布局
-    addIncludeButton = new QPushButton(QIcon(":/resources/icons/add.svg"), tr("Add Path"), this);
-    removeIncludeButton = new QPushButton(QIcon(":/resources/icons/remove.svg"), tr("Remove Path"), this);
+    addIncludeButton = new QPushButton(QIcon(), tr("Add Path"), this);
+    removeIncludeButton = new QPushButton(QIcon(), tr("Remove Path"), this);
     includeButtonLayout->addWidget(addIncludeButton);
     includeButtonLayout->addWidget(removeIncludeButton);
     includeLayout->addLayout(includeButtonLayout);  // 将按钮布局添加到主布局
@@ -288,8 +287,8 @@ void MainWindow::setupUI()
     
     // 添加/删除宏按钮
     QHBoxLayout *macroButtonLayout = new QHBoxLayout();  // 创建水平布局
-    addMacroButton = new QPushButton(QIcon(":/resources/icons/add.svg"), tr("Add Macro"), this);
-    removeMacroButton = new QPushButton(QIcon(":/resources/icons/remove.svg"), tr("Remove Macro"), this);
+    addMacroButton = new QPushButton(QIcon(), tr("Add Macro"), this);
+    removeMacroButton = new QPushButton(QIcon(), tr("Remove Macro"), this);
     macroButtonLayout->addWidget(addMacroButton);
     macroButtonLayout->addWidget(removeMacroButton);
     macroLayout->addLayout(macroButtonLayout);  // 将按钮布局添加到主布局
@@ -384,8 +383,8 @@ void MainWindow::createMenus()
     uiMenu->addAction(tr("Reset Layout"), this, &MainWindow::onResetLayout);
     uiMenu->addAction(tr("Toggle Output Panel"), this, &MainWindow::onToggleOutput, Qt::Key_F12);
     
-    //uiMenu->addSeparator();
-    //uiMenu->addAction(tr("Toggle Theme"), this, &MainWindow::onToggleTheme, QKeySequence(Qt::CTRL | Qt::Key_T));
+    uiMenu->addSeparator();
+    uiMenu->addAction(tr("Toggle Theme"), this, &MainWindow::onToggleTheme, QKeySequence(Qt::CTRL | Qt::Key_T));
     
     // 设置菜单栏鼠标事件追踪
     bar->setMouseTracking(true);
@@ -446,11 +445,6 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
         }
     }
     return QMainWindow::eventFilter(obj, event);
-}
-
-void MainWindow::setupShortcuts()
-{
-    // 快捷键已在createMenus()中设置
 }
 
 void MainWindow::loadFileContent(const QString &fileName)
@@ -884,6 +878,8 @@ void MainWindow::applyTheme(bool dark)
             }
         )";
         setStyleSheet(darkStyle);
+        compilerSettingUI->setStyleSheet(darkStyle);
+        inputEdit->setStyleSheet(darkStyle);
     } else {
         // 浅色主题
         QString lightStyle = R"(
@@ -990,6 +986,8 @@ void MainWindow::applyTheme(bool dark)
             }
         )";
         setStyleSheet(lightStyle);
+        compilerSettingUI->setStyleSheet(lightStyle);
+        inputEdit->setStyleSheet(lightStyle);
     }
 }
 
