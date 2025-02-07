@@ -20,6 +20,8 @@ public:
     explicit DocumentWindow(QWidget *parent = nullptr, const QString &documentTitle = "untitled");
     ~DocumentWindow();
 
+    void enableSave(bool enable);
+
 public slots:
     void compile();
     void addIncludePath();
@@ -70,6 +72,8 @@ private:
     QString lastHLSLCompiler;
     QString lastGLSLCompiler;
     QString lastOpenDir;
+
+    bool isSaveSettings;
 };
 
 #endif

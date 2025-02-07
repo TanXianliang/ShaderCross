@@ -23,18 +23,13 @@
 #include <QtCore/QTimer>
 #include <QtGui/QMouseEvent>
 #include <QtWidgets/QToolButton>
-#include "fxcCompiler.h"
-#include "compilerConfig.h"
+#include <QtWidgets/QMdiArea>
+#include <QTabWidget>
 #include <QDebug>
-#include "languageConfig.h"
-#include "compilerSettingUI.h"
-#include "dxcCompiler.h"
-#include "glslangCompiler.h"
-#include "shaderCodeTextEdit.h"
-#include "glslangkgverCompiler.h"
 #include <QtGui/QPainter>
 #include <QtGui/QScreen>
 #include <QtGui/QGuiApplication>
+ #include <QInputDialog>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -120,15 +115,14 @@ void MainWindow::windowmin()
 
 void MainWindow::setupUI()
 {
-    QWidget *centralWidget = new QWidget(this);
-    mainLayout = new QVBoxLayout(centralWidget);
-    mainLayout->setSpacing(12);  // 恢复间距
-    mainLayout->setContentsMargins(12, 12, 12, 12);  // 恢复边距
+    tabWidget = new QTabWidget(this); // 初始化 Tab 控件
+    setCentralWidget(tabWidget); // 设置为主窗口的中心部件
 
-    // 创建新文档
-    onNewDocument();
+    tabWidget->tabBar()->setTabsClosable(true); // 启用关闭按钮
+    tabWidget->tabBar()->setMovable(true); // 允许拖动标签
 
-    setCentralWidget(centralWidget);
+    //connect(tabWidget, &QTabWidget::tabCloseRequested, this, &MainWindow::onTabCloseRequested);
+    connect(tabWidget->tabBar(), SIGNAL(tabCloseRequested(int)), this, SLOT(onTabCloseRequested(int)));
 }
 
 void MainWindow::createMenus()
@@ -241,14 +235,39 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
 void MainWindow::onNewDocument()
 {
-    if (currentDocument) {
-        currentDocument->close();
-        delete currentDocument;
-        currentDocument = nullptr;
-    }
+    QString documentName;
+    bool ok = false;
+    static int documentIndex = 0;
 
-    currentDocument = new DocumentWindow(this);
-    mainLayout->addWidget(currentDocument);
+    do {
+        // 弹出对话框输入文档名称
+        documentName = QInputDialog::getText(this, QString("文档命名"), QString("文档名称:"), QLineEdit::Normal, QString("untitled-%1").arg(documentIndex), &ok);
+        if (!ok || documentName.isEmpty()) {
+            return; // 如果用户取消或输入为空，则返回
+        }
+        documentIndex++; // 递增索引
+
+        // 检查是否存在同名文档
+        for (int i = 0; i < tabWidget->count(); ++i) {
+            if (tabWidget->tabText(i).toLower() == documentName.toLower()) {
+                ok = false;
+                break;
+            }
+        }
+
+        if (!ok) {
+            QMessageBox::warning(this, QString("警告"), QString("文档名字已经存在，请重新命名"));
+        }
+    } while (!ok);
+
+    // 创建新的 DocumentWindow 实例
+    documentName = documentName.toLower();
+    DocumentWindow *newDocument = new DocumentWindow(this, documentName);
+    
+    // 将新文档添加到 Tab 控件
+    int tabIndex = tabWidget->addTab(newDocument, documentName);
+    tabWidget->tabBar()->setTabsClosable(true); // 启用关闭按钮
+    newDocument->show(); // 显示新文档窗口
 }
 
 void MainWindow::onSaveResult()
@@ -426,6 +445,37 @@ void MainWindow::applyTheme(bool dark)
                 background-color: #c42b1c;
                 color: white;
             }
+
+            /* QTabWidget 样式 */
+            QTabWidget {
+                background-color: #252526;
+                border: 1px solid #2d2d2d;
+            }
+
+            QTabBar {
+                background-color: #252526;
+                color: #d4d4d4;
+            }
+
+            QTabBar::tab {
+                background: #3c3c3c;
+                padding: 10px;
+                border: 1px solid #2d2d2d;
+                border-bottom: none;
+            }
+
+            QTabBar::tab:selected {
+                background: #1e1e1e;
+                color: #ffffff;
+            }
+
+            QTabBar::tab:hover {
+                background: #4a6c94; /* 鼠标悬停时背景色 */
+            }
+
+           QTabBar::close-button {
+                image: url(:/resources/icons/closeicon.png); /* 设置关闭图标 */
+            }
         )";
         setStyleSheet(darkStyle);
 
@@ -536,6 +586,33 @@ void MainWindow::applyTheme(bool dark)
             QWidget#titleBar QLabel {
                 color: #000000;
             }
+
+            /* QTabWidget 样式 */
+            QTabWidget {
+                background-color: #ffffff;
+                border: 1px solid #e0e0e0;
+            }
+
+            QTabBar {
+                background-color: #f5f5f5;
+                color: #000000;
+            }
+
+            QTabBar::tab {
+                background: #e0e0e0;
+                padding: 10px;
+                border: 1px solid #e0e0e0;
+                border-bottom: none;
+            }
+
+            QTabBar::tab:selected {
+                background: #ffffff;
+                color: #000000;
+            }
+
+            QTabBar::tab:hover {
+                background: #d8d8d8;
+            }
         )";
         setStyleSheet(lightStyle);
         if (currentDocument) {
@@ -564,6 +641,19 @@ void MainWindow::loadSettings()
     // 恢复窗口位置和大小
     resize(settings.value("windowSize", QSize(800, 600)).toSize());
     move(settings.value("windowPosition", QPoint(100, 100)).toPoint());
+
+    // 自动恢复所有文档
+    QDir tempDocsDir(QCoreApplication::applicationDirPath() + "/config/temp_docs");
+    QStringList iniFiles = tempDocsDir.entryList(QStringList() << "*.ini", QDir::Files);
+    
+    for (const QString &fileName : iniFiles) {
+        // 去除扩展名，只保留文件名
+        QString documentName = fileName.left(fileName.lastIndexOf('.'));
+        documentName = documentName.toLower();
+
+        DocumentWindow *document = new DocumentWindow(this, documentName);
+        tabWidget->addTab(document, documentName);
+    }
 }
 
 void MainWindow::saveSettings()
@@ -655,4 +745,27 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
     resizing = false;
     resizeEdge = Qt::Edge();
     QMainWindow::mouseReleaseEvent(event);
+}
+
+void MainWindow::onTabCloseRequested(int index)
+{ 
+    QWidget *tab = tabWidget->widget(index);
+    if (tab) {
+        // 获取tab的documentWindow
+        DocumentWindow *documentWindow = dynamic_cast<DocumentWindow*>(tab);
+        if (documentWindow) {
+            documentWindow->enableSave(false);
+        }
+        documentWindow = nullptr;
+
+        tabWidget->removeTab(index);
+        delete tab; // 释放内存
+    }
+}
+
+void MainWindow::onTabDoubleClicked(int index)
+{
+    if (index >= 0) { // 确保索引有效
+        tabWidget->removeTab(index); // 移除标签
+    }
 } 

@@ -21,6 +21,7 @@ DocumentWindow::DocumentWindow(QWidget *parent, const QString &documentTitle)
     , lastHLSLCompiler("DXC")
     , lastGLSLCompiler("GLSLANG")
     , lastOpenDir(QDir::currentPath())
+    , isSaveSettings(true)
 {
     setAttribute(Qt::WA_DeleteOnClose);
     setupUI();
@@ -31,7 +32,13 @@ DocumentWindow::DocumentWindow(QWidget *parent, const QString &documentTitle)
  // Start of Selection
 DocumentWindow::~DocumentWindow()
 {
-    saveSettings();
+    if (isSaveSettings) {
+        saveSettings(); 
+    } else {
+        // 删除settings文件
+        QString settingsPath = settingsFilePath();
+        QFile::remove(settingsPath);
+    }
 
     // 销毁所有UI控件
     if (filePathEdit) {
@@ -90,6 +97,11 @@ DocumentWindow::~DocumentWindow()
         delete compilerSettingUI;
         compilerSettingUI = nullptr;
     }
+}
+
+void DocumentWindow::enableSave(bool enable)
+{
+    isSaveSettings = enable;
 }
 
 void DocumentWindow::setupUI()
@@ -548,7 +560,7 @@ QString DocumentWindow::settingsFilePath() const
     QString exePath = QCoreApplication::applicationDirPath();
     QString configPath = exePath + "/config";
     QDir().mkpath(configPath);  // 确保config目录存在
-    return configPath + "/" + documentWindowTitle + "_settings.ini";  // 返回完整的配置文件路径
+    return configPath + "/temp_docs/" + documentWindowTitle + ".ini";  // 返回完整的配置文件路径
 }
 
 void DocumentWindow::loadSettings()

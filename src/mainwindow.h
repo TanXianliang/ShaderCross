@@ -13,6 +13,7 @@
 #include <QSettings>
 #include "shaderCodeTextEdit.h"
 #include "documentWindow.h"
+#include <QTabWidget>
 
 class MainWindow : public QMainWindow
 {
@@ -34,12 +35,14 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
 
-private slots:
+public slots:
     void onNewDocument();
     void onSaveResult();
     void onShowDisassembly();
     void onResetLayout();
     void onToggleTheme();
+    void onTabCloseRequested(int index);
+    void onTabDoubleClicked(int index);
 
 private:
     void createMenus();
@@ -61,10 +64,10 @@ private:
     static const int RESIZE_MARGIN = 5;  // 边缘调整区域的宽度
     bool isDarkTheme;
 
-    QVBoxLayout *mainLayout; // 主布局
-
     // 添加 DocumentWindow 相关
     DocumentWindow *currentDocument;
+
+    QTabWidget *tabWidget; // 添加 Tab 控件
 };
 
 #endif // MAINWINDOW_H 
