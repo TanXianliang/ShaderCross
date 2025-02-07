@@ -167,10 +167,28 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 {
     if (obj == menuBar()) {
         static bool isDoubleClick = false;
+        static bool isPressOnButton = false;
 
         switch (event->type()) {
             case QEvent::MouseButtonPress: {
-                QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+                auto menuBarInstance = menuBar();
+                int menuBarMaxWidth = 0;
+
+                // 遍历菜单中的所有动作
+                for (QAction *action : menuBarInstance->actions()) {
+                    // 获取动作的文本
+                    QRect actionRect = menuBarInstance->actionGeometry(action); 
+                    if (actionRect.right() > menuBarMaxWidth) {
+                        menuBarMaxWidth = actionRect.right();
+                    }
+                }
+
+                QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+                auto mousePosX = mouseEvent->globalPos().x() - this->pos().x();
+                if (mousePosX < menuBarMaxWidth) {
+                    isPressOnButton = true;
+                }
+
                 if (mouseEvent->button() == Qt::LeftButton) {
                     mouseQPoint = mouseEvent->globalPos() - this->pos();
                 }
@@ -196,7 +214,7 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
             case QEvent::MouseMove: {
                 QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
-                if (!isDoubleClick && (mouseEvent->buttons() & Qt::LeftButton)) {
+                if (!isPressOnButton && !isDoubleClick && (mouseEvent->buttons() & Qt::LeftButton)) {
                     if (isMaximized()) {
                         // 在最大化状态下拖动时还原窗口
                         double ratio = static_cast<double>(mouseEvent->globalPos().x()) / 
@@ -213,6 +231,7 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
             case QEvent::MouseButtonRelease: {
                 isDoubleClick = false;
+                isPressOnButton = false;
                 break;
             }
         }
