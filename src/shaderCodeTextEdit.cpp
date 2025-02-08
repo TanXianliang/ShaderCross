@@ -139,6 +139,10 @@ ShaderCodeTextEdit::ShaderCodeTextEdit(QWidget *parent)
     : QPlainTextEdit(parent), highlighter(new ShaderCodeHighlighter(document())) {
     // 设置默认的着色器语言
     setShaderLanguage("GLSL");
+    
+    // 设置Tab停止距离为4个空格的宽度
+    int tabWidth = QFontMetrics(font()).horizontalAdvance("    "); // 计算 4 个空格的宽度
+    setTabStopDistance(tabWidth);
 }
 
 void ShaderCodeTextEdit::setShaderLanguage(const QString &language) {
