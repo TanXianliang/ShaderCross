@@ -83,7 +83,7 @@ QString GlslKgverCodePrebuilder::handleInclude(const CodeIncludeFile &currentFil
         QString cgincContent = LoadCginc(cgincPath) + "\n";
         QStringList lines = cgincContent.split('\n');
 
-        AddCodeRecords(lines.size(), 0, cgincPath, "");
+        AddCodeRecords(lines.size(), 1, cgincPath, "");
         return cgincContent;
     }
 
@@ -120,7 +120,7 @@ QString GlslKgverCodePrebuilder::parseCodeSections(const CodeIncludeFile &includ
 
     int pushedNumLines = 0;
     int travelNumLines = 0;
-    int travelLineOffset = 0;
+    int travelLineOffset = 1;
 
     for (const QString &line : lines) {
 
@@ -220,7 +220,7 @@ void GlslKgverCodePrebuilder::addToHead(const QString& headCode, const QString& 
 
     globalLineIter += numLines;
 
-    CodeRecord rec = { headFileName, sectionName, 0, numLines, 0 };
+    CodeRecord rec = { headFileName, sectionName, 1, numLines, 1 };
     codeRecords.insert(codeRecords.begin(), rec);
 }
 
@@ -273,9 +273,9 @@ void GlslKgverCodePrebuilder::initCodeSections(CodeIncludeFile &includeFile, con
     QStringList lines = shaderCode.split('\n');
     QString currentSectionName;
     QString currentSectionContent;
-    int lineIter = 0;
-    int lineStart = 0;
-    int lineEnd = 0;
+    int lineIter = 1;
+    int lineStart = 1;
+    int lineEnd = 1;
 
     for (const QString &line : lines) { 
         lineEnd++;
@@ -380,7 +380,7 @@ QString TransformGlslKgverCodeErrors(GlslKgverCodePrebuilder &codePrebuilder, co
                 }
                 line = QString("ERROR: %1(line: %2, global: %3)%4")
                     .arg(errFileLineInfo.includeFile)
-                    .arg(QString::number(errFileLineInfo.inlineNum + 1)) // 确保转换为字符串, 编辑器计数从1开始
+                    .arg(QString::number(errFileLineInfo.inlineNum)) // 确保转换为字符串, 编辑器计数从1开始
                     .arg(globalLineNum)
                     .arg(errorContent);
             }
