@@ -327,7 +327,7 @@ void MainWindow::onNewDocument()
 
     do {
         // 弹出对话框输入文档名称
-        documentName = QInputDialog::getText(this, QString("文档命名"), QString("文档名称:"), QLineEdit::Normal, QString("untitled-%1").arg(documentIndex), &ok);
+        documentName = QInputDialog::getText(this, QString("Document Naming"), QString("Name:"), QLineEdit::Normal, QString("untitled-%1").arg(documentIndex), &ok);
         if (!ok || documentName.isEmpty()) {
             return; // 如果用户取消或输入为空，则返回
         }
@@ -342,7 +342,7 @@ void MainWindow::onNewDocument()
         }
 
         if (!ok) {
-            QMessageBox::warning(this, QString("警告"), QString("文档名字已经存在，请重新命名"));
+            QMessageBox::warning(this, QString("Warnings"), QString("The document name already exists, please rename it."));
         }
     } while (!ok);
 
@@ -360,7 +360,31 @@ void MainWindow::onSaveResult()
 {
     QString fileName = QFileDialog::getSaveFileName(this, tr("Save Compilation Result"), QString(), tr("All Files (*.*)"));
     if (!fileName.isEmpty()) {
-        // TODO: Implement save logic
+        QWidget* tab = tabWidget->currentWidget();
+        if (tab) {
+            // 获取tab的documentWindow
+            DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab);
+            if (documentWindow) {
+                auto content = documentWindow->getContent();
+                QFile file(fileName);
+                if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                    QTextStream out(&file);
+
+                    if (documentWindow->getEncoding() == "UTF-8") {
+                        out.setCodec("UTF-8");
+                    } else if (documentWindow->getEncoding() == "GB2312") {
+                        out.setCodec("GB2312");
+                    } else if (documentWindow->getEncoding() == "GBK") {
+                        out.setCodec("GBK");
+                    }
+                    
+                    out << content; // 将内容写入文件
+                    file.close();
+                } else {
+                    QMessageBox::warning(this, QString("Warnings"), QString("Saving file failed."));
+                }
+            }
+        }
     }
 }
 

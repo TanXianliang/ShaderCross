@@ -35,6 +35,8 @@ public slots:
     void loadFileContent(const QString &filePath);
     void undo();
     void redo();
+    QString getContent();
+    QString getEncoding();
 
 private:
     void setupUI();

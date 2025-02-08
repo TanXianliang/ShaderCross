@@ -260,9 +260,17 @@ void DocumentWindow::setupConnections()
     // 文件浏览按钮连接
     connect(browseButton, &QPushButton::clicked, this, &DocumentWindow::onBrowseFile);
     connect(encodingCombo, &QComboBox::currentTextChanged, [this]() {
-        if (!filePathEdit->text().isEmpty()) {
-            loadFileContent(filePathEdit->text());
-        }
+            QString encoding = encodingCombo->currentText();
+            QString shaderCode = inputEdit->toPlainText();
+            QTextStream shaderStream(&shaderCode);
+            if (encoding == "UTF-8") {
+                shaderStream.setCodec("UTF-8");
+            } else if (encoding == "GB2312") {
+                shaderStream.setCodec("GB2312");
+            } else if (encoding == "GBK") {
+                shaderStream.setCodec("GBK");
+            }
+            shaderCode = shaderStream.readAll();
     });
 
     // 监听列表内容变化，动态调整高度
@@ -729,3 +737,12 @@ void DocumentWindow::redo()
     }
 }
 
+QString DocumentWindow::getContent()
+{
+    return inputEdit->toPlainText();
+}
+
+QString DocumentWindow::getEncoding()
+{
+    return encodingCombo->currentText();
+}
