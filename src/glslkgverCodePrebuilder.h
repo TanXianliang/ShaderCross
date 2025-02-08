@@ -15,8 +15,8 @@ class CodeSection {
 public:
     QString name; // 代码块名称
     QString content; // 代码块内容
-    int lineStart;
-    int lineEnd;
+    int lineStart; // 行号从1开始
+    int lineEnd; // 结束行号等于lineEnd - 1，lineNum = lineEnd - lineStart
 };
 
 class CodeIncludeFile
@@ -70,9 +70,9 @@ private:
     {
         QString IncludeFile;
         QString Section;
-        int globalLineStart;
-        int globalLineEnd;
-        int sectionLocalLineOffset;
+        int globalLineStart; // 行号从1开始
+        int globalLineEnd; // 结束行号等于lineEnd - 1，lineNum = lineEnd - lineStart
+        int sectionLocalLineOffset; // 在CodeSection中的局部行号，从1开始
     };
     std::vector<CodeRecord> codeRecords;
     int globalLineIter;
