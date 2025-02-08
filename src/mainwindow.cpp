@@ -162,119 +162,125 @@ void MainWindow::createMenus()
     bar->setMouseTracking(true);
 }
 
+// 事件过滤器，用于处理菜单栏和窗口的鼠标事件
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 {
+    // 检查是否是菜单栏的事件
     if (obj == menuBar()) {
-        static bool isDoubleClick = false;
-        static bool isPressOnButton = false;
+        static bool isDoubleClick = false; // 记录是否双击
+        static bool isPressOnButton = false; // 记录是否按下按钮
 
         switch (event->type()) {
-            case QEvent::MouseButtonPress: {
+            case QEvent::MouseButtonPress: { // 鼠标按下事件
                 auto menuBarInstance = menuBar();
-                int menuBarMaxWidth = 0;
+                int menuBarMaxWidth = 0; // 菜单栏最大宽度
 
                 // 遍历菜单中的所有动作
                 for (QAction *action : menuBarInstance->actions()) {
-                    // 获取动作的文本
+                    // 获取动作的矩形区域
                     QRect actionRect = menuBarInstance->actionGeometry(action); 
                     if (actionRect.right() > menuBarMaxWidth) {
-                        menuBarMaxWidth = actionRect.right();
+                        menuBarMaxWidth = actionRect.right(); // 更新最大宽度
                     }
                 }
 
                 QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
                 auto mousePosX = mouseEvent->globalPos().x() - this->pos().x();
                 if (mousePosX < menuBarMaxWidth) {
-                    isPressOnButton = true;
+                    isPressOnButton = true; // 按下按钮
                 }
 
                 if (mouseEvent->button() == Qt::LeftButton) {
-                    mouseQPoint = mouseEvent->globalPos() - this->pos();
+                    mouseQPoint = mouseEvent->globalPos() - this->pos(); // 记录鼠标位置
                 }
                 break;
             }
 
-            case QEvent::MouseButtonDblClick: {
+            case QEvent::MouseButtonDblClick: { // 鼠标双击事件
                 QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
                 if (mouseEvent->button() == Qt::LeftButton) {
-                    isDoubleClick = true;
-                    if (isMaximized()) {
-                        showNormal();
-                        maxButton->setIcon(QIcon(":/resources/icons/maxicon.png"));
-                        maxButton->setToolTip(tr("maximize"));
+                    isDoubleClick = true; // 设置双击标志
+                    if (isMaximized()) { // 如果窗口已最大化
+                        showNormal(); // 还原窗口
+                        maxButton->setIcon(QIcon(":/resources/icons/maxicon.png")); // 设置最大化图标
+                        maxButton->setToolTip(tr("maximize")); // 设置提示信息
                         return true;
                     } else {
-                        showMaximized();
-                        maxButton->setIcon(QIcon(":/resources/icons/returnicon.png"));
-                        maxButton->setToolTip(tr("restore"));
+                        showMaximized(); // 最大化窗口
+                        maxButton->setIcon(QIcon(":/resources/icons/returnicon.png")); // 设置还原图标
+                        maxButton->setToolTip(tr("restore")); // 设置提示信息
                         return true;
                     }
                 }
                 break;
             }
 
-            case QEvent::MouseMove: {
+            case QEvent::MouseMove: { // 鼠标移动事件
                 QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
                 if (!isPressOnButton && !isDoubleClick && (mouseEvent->buttons() & Qt::LeftButton)) {
-                    if (isMaximized()) {
+                    if (isMaximized()) { // 如果窗口已最大化
                         // 在最大化状态下拖动时还原窗口
                         QRect geo = normalGeometry();
                         showNormal();
 
-                        maxButton->setIcon(QIcon(":/resources/icons/maxicon.png"));
-                        maxButton->setToolTip(tr("maximize"));
+                        maxButton->setIcon(QIcon(":/resources/icons/maxicon.png")); // 设置最大化图标
+                        maxButton->setToolTip(tr("maximize")); // 设置提示信息
 
                         geo.moveLeft(mouseEvent->globalPos().x() - geo.width() / 2);
                         geo.moveTop(mouseEvent->globalPos().y());
 
-                        setGeometry(geo);
+                        setGeometry(geo); // 设置窗口几何形状
 
-                        mouseQPoint = mouseEvent->globalPos() - this->pos();
+                        mouseQPoint = mouseEvent->globalPos() - this->pos(); // 更新鼠标位置
                     }
                     else
                     {
-                        move(mouseEvent->globalPos() - mouseQPoint);
+                        move(mouseEvent->globalPos() - mouseQPoint); // 移动窗口
                     }
                 }
                 break;
             }
 
-            case QEvent::MouseButtonRelease: {
-                isDoubleClick = false;
-                isPressOnButton = false;
+            case QEvent::MouseButtonRelease: { // 鼠标释放事件
+                isDoubleClick = false; // 重置双击标志
+                isPressOnButton = false; // 重置按钮按下标志
                 break;
             }
         }
     }
 
-    if (obj != menuBar() && !resizing && !isMaximized() && event->type() == QEvent::MouseButtonPress)
+    // 检查是否是当前窗口的鼠标按下事件
+    if (obj == this && !resizing && !isMaximized() && event->type() == QEvent::MouseButtonPress)
     {
         QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
         if (mouseEvent->button() == Qt::LeftButton) {
+            // 检查鼠标位置以确定是否开始调整大小
             if (mouseEvent->pos().y() >= height() - RESIZE_MARGIN) {
-                resizing = true;
-                resizeEdge = Qt::BottomEdge;
+                resizing = true; // 开始调整大小
+                resizeEdge = Qt::BottomEdge; // 设置调整边缘为底部
             }
             else if (mouseEvent->pos().x() <= RESIZE_MARGIN) {
-                resizing = true;
-                resizeEdge = Qt::LeftEdge;
+                resizing = true; // 开始调整大小
+                resizeEdge = Qt::LeftEdge; // 设置调整边缘为左侧
             }
             else if (mouseEvent->pos().x() >= width() - RESIZE_MARGIN) {
-                resizing = true;
-                resizeEdge = Qt::RightEdge;
+                resizing = true; // 开始调整大小
+                resizeEdge = Qt::RightEdge; // 设置调整边缘为右侧
             }
-            mouseQPoint = mouseEvent->globalPos();
+            mouseQPoint = mouseEvent->globalPos(); // 记录鼠标位置
         }
     }
 
+    // 处理鼠标移动事件
     if (event->type() == QEvent::MouseMove)
     {
         QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
 
-        if (resizing && (mouseEvent->buttons() & Qt::LeftButton)) {
-            QPoint delta = mouseEvent->globalPos() - mouseQPoint;
-            QRect geo = geometry();
+        if (resizing && (mouseEvent->buttons() & Qt::LeftButton)) { // 如果正在调整大小
+            QPoint delta = mouseEvent->globalPos() - mouseQPoint; // 计算鼠标移动的增量
+            QRect geo = geometry(); // 获取当前窗口几何形状
 
+            // 根据调整边缘更新窗口几何形状
             if (resizeEdge & Qt::LeftEdge) {
                 geo.setLeft(geo.left() + delta.x());
             }
@@ -288,34 +294,35 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
                 geo.setBottom(geo.bottom() + delta.y());
             }
 
-            setGeometry(geo);
-            mouseQPoint = mouseEvent->globalPos();
+            setGeometry(geo); // 设置新的窗口几何形状
+            mouseQPoint = mouseEvent->globalPos(); // 更新鼠标位置
         }
 
+        // 更新鼠标样式
         if (obj == this) {
-            // 更新鼠标样式
             if (mouseEvent->pos().y() <= RESIZE_MARGIN || mouseEvent->pos().y() >= height() - RESIZE_MARGIN) {
-                setCursor(Qt::SizeVerCursor);
+                setCursor(Qt::SizeVerCursor); // 设置为垂直调整大小光标
             }
             else if (mouseEvent->pos().x() <= RESIZE_MARGIN || mouseEvent->pos().x() >= width() - RESIZE_MARGIN) {
-                setCursor(Qt::SizeHorCursor);
+                setCursor(Qt::SizeHorCursor); // 设置为水平调整大小光标
             }
             else {
-                setCursor(Qt::ArrowCursor);
+                setCursor(Qt::ArrowCursor); // 设置为箭头光标
             }
         }
         else if (!resizing) {
-            setCursor(Qt::ArrowCursor);
+            setCursor(Qt::ArrowCursor); // 设置为箭头光标
         }
     }
 
+    // 鼠标释放事件
     if (event->type() == QEvent::MouseButtonRelease)
     {
-        resizing = false;
-        resizeEdge = Qt::Edge();
+        resizing = false; // 结束调整大小
+        resizeEdge = Qt::Edge(); // 重置调整边缘
     }
 
-    return QMainWindow::eventFilter(obj, event);
+    return QMainWindow::eventFilter(obj, event); // 调用基类的事件过滤器
 }
 
 void MainWindow::onNewDocument()
@@ -403,24 +410,25 @@ void MainWindow::onNewDocumentByOpenWorkspace()
 
 void MainWindow::onSaveResult()
 {
-    QWidget* tab = tabWidget->currentWidget();
+    QWidget* tab = tabWidget->currentWidget(); // 获取当前选中的标签页
     if (tab) {
         // 获取tab的documentWindow
-        DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab);
+        DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab); // 将当前标签页转换为DocumentWindow类型
         if (documentWindow) {
-            QString title = documentWindow->getDocumentWindowTitle();
-            QString language = documentWindow->getLanguage();
+            QString title = documentWindow->getDocumentWindowTitle(); // 获取文档标题
+            QString language = documentWindow->getLanguage(); // 获取文档语言
 
-            QString defaultFilePath = title + "." + language;
-            defaultFilePath = defaultFilePath.toLower();
+            QString defaultFilePath = title + "." + language; // 生成默认文件路径
+            defaultFilePath = defaultFilePath.toLower(); // 转换为小写
 
-            QString fileName = QFileDialog::getSaveFileName(this, tr("Save Code"), defaultFilePath, tr("All Files (*.*)"));
-            if (!fileName.isEmpty()) {
-                auto content = documentWindow->getContent();
-                QFile file(fileName);
-                if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-                    QTextStream out(&file);
+            QString fileName = QFileDialog::getSaveFileName(this, tr("Save Code"), defaultFilePath, tr("All Files (*.*)")); // 打开保存文件对话框
+            if (!fileName.isEmpty()) { // 如果用户选择了文件名
+                auto content = documentWindow->getContent(); // 获取文档内容
+                QFile file(fileName); // 创建文件对象
+                if (file.open(QIODevice::WriteOnly | QIODevice::Text)) { // 尝试打开文件进行写入
+                    QTextStream out(&file); // 创建文本流
 
+                    // 根据文档编码设置文本流编码
                     if (documentWindow->getEncoding() == "UTF-8") {
                         out.setCodec("UTF-8");
                     }
@@ -432,10 +440,10 @@ void MainWindow::onSaveResult()
                     }
 
                     out << content; // 将内容写入文件
-                    file.close();
+                    file.close(); // 关闭文件
                 }
                 else {
-                    QMessageBox::warning(this, QString("Warnings"), QString("Saving file failed."));
+                    QMessageBox::warning(this, QString("Warnings"), QString("Saving file failed.")); // 显示保存失败的警告
                 }
             }
         }
@@ -444,17 +452,17 @@ void MainWindow::onSaveResult()
 
 void MainWindow::onSaveWorkspace()
 {
-    QWidget* tab = tabWidget->currentWidget();
+    QWidget* tab = tabWidget->currentWidget(); // 获取当前选中的标签页
     if (tab) {
         // 获取tab的documentWindow
-        DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab);
-        QString defaultFilePath = documentWindow->getDocumentWindowTitle() + ".ini";
-        defaultFilePath = defaultFilePath.toLower();
+        DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab); // 将当前标签页转换为DocumentWindow类型
+        QString defaultFilePath = documentWindow->getDocumentWindowTitle() + ".ini"; // 生成默认工作区文件路径
+        defaultFilePath = defaultFilePath.toLower(); // 转换为小写
 
         if (documentWindow) {
-            QString fileName = QFileDialog::getSaveFileName(this, tr("Save Workspace"), defaultFilePath, tr("Setting Files (*.ini)"));
-            if (!fileName.isEmpty()) {
-                documentWindow->saveSettings(fileName);
+            QString fileName = QFileDialog::getSaveFileName(this, tr("Save Workspace"), defaultFilePath, tr("Setting Files (*.ini)")); // 打开保存工作区对话框
+            if (!fileName.isEmpty()) { // 如果用户选择了文件名
+                documentWindow->saveSettings(fileName); // 保存文档窗口的设置
             }
         }
     }
