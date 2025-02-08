@@ -148,10 +148,72 @@ ShaderCodeTextEdit::ShaderCodeTextEdit(QWidget *parent)
     // 设置Tab停止距离为4个空格的宽度
     int tabWidth = QFontMetrics(font()).horizontalAdvance("    "); // 计算 4 个空格的宽度
     setTabStopDistance(tabWidth);
+
+    lineNumberArea = new LineNumberArea(this);
+    connect(this, &QPlainTextEdit::blockCountChanged, this, &ShaderCodeTextEdit::updateLineNumberAreaWidth);
+    connect(this, &QPlainTextEdit::updateRequest, this, &ShaderCodeTextEdit::updateLineNumberArea);
+    updateLineNumberAreaWidth(0);
 }
 
 void ShaderCodeTextEdit::setShaderLanguage(const QString &language) {
     // 根据语言设置高亮规则（可以扩展）
     highlighter->keywords = GetKeyWords(language);
     highlighter->rehighlight(); // 重新高亮
+}
+
+int ShaderCodeTextEdit::lineNumberAreaWidth() {
+    int digits = 1;
+    int maxLines = qMax(1, blockCount());
+    while (maxLines >= 10) {
+        maxLines /= 10;
+        ++digits;
+    }
+    int space = 10 + fontMetrics().horizontalAdvance(QLatin1Char('9')) * digits;
+    return space;
+}
+
+void ShaderCodeTextEdit::resizeEvent(QResizeEvent* event) {
+    QPlainTextEdit::resizeEvent(event);
+    QRect cr = contentsRect();
+    lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height()));
+}
+
+inline void ShaderCodeTextEdit::lineNumberAreaPaintEvent(QPaintEvent* event) {
+    QPainter painter(lineNumberArea);
+
+    QFont fontInstance = font(); // 获取当前字体
+    fontInstance.setPointSize(fontInstance.pointSize() - 1);
+    painter.setFont(fontInstance); // 应用新的字体
+
+    painter.fillRect(event->rect(), Qt::darkGray);
+
+    QTextBlock block = firstVisibleBlock();
+    int blockNumber = block.blockNumber();
+    auto boundingGeo = blockBoundingGeometry(block);
+    qreal top = boundingGeo.top(); // 获取当前块的顶部位置
+    qreal bottom = boundingGeo.bottom();
+
+    while (block.isValid() && (int)top <= lineNumberArea->height()) {
+        if (block.isVisible()) {
+            painter.drawText(-2, top, lineNumberArea->width(), boundingGeo.height(),
+                Qt::AlignRight, QString::number(blockNumber + 1));
+        }
+        block = block.next();
+        boundingGeo = blockBoundingGeometry(block);
+        top = boundingGeo.top(); // 获取当前块的顶部位置
+        bottom = boundingGeo.bottom();
+        ++blockNumber;
+    }
+}
+
+LineNumberArea::LineNumberArea(ShaderCodeTextEdit* editor) : QWidget(editor) {
+    this->editor = editor;
+}
+
+QSize LineNumberArea::sizeHint() const {
+    return QSize(editor->lineNumberAreaWidth(), 0);
+}
+
+void LineNumberArea::paintEvent(QPaintEvent* event) {
+    editor->lineNumberAreaPaintEvent(event);
 }
