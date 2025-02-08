@@ -14,6 +14,7 @@
 #include "glslangCompiler.h"
 #include "glslangkgverCompiler.h"
 #include <QDialogButtonBox>
+#include <QDateTime>
 
 DocumentWindow::DocumentWindow(QWidget *parent, const QString &documentTitle)
     : QMainWindow(parent)
@@ -325,29 +326,35 @@ void DocumentWindow::compile()
         macros << macroList->item(i)->text();
     }
 
+    outputEdit->clear();
+    logEdit->clear();
+
     // 根据选择的编译器创建相应的实例
     if (compiler == "FXC") {
         fxcCompiler *fxcCompilerInstance = new fxcCompiler(this);
         
         connect(fxcCompilerInstance, &fxcCompiler::compilationFinished, this, [this](const QString &output) {
             outputEdit->setTextColor(Qt::green);
-            outputEdit->append(tr("Compilation succeeded:\n") + output);
+            outputEdit->append(output);
+            QString currentTime = QDateTime::currentDateTime().toString("yyyyMMdd-HH-mm-ss");
             logEdit->setTextColor(Qt::green);
-            logEdit->append(tr("Compilation succeeded"));
+            logEdit->append(currentTime + ": Compilation succeeded");
         });
 
         connect(fxcCompilerInstance, &fxcCompiler::compilationError, this, [this](const QString &error) {
             outputEdit->setTextColor(Qt::red);
             outputEdit->append(tr("Compilation error:\n") + error);
+            QString currentTime = QDateTime::currentDateTime().toString("yyyyMMdd-HH-mm-ss");
             logEdit->setTextColor(Qt::red);
-            logEdit->append(tr("Compilation failed"));
+            logEdit->append(currentTime + ": Compilation failed");
         });
 
         connect(fxcCompilerInstance, &fxcCompiler::compilationWarning, this, [this](const QString &warning) {
             outputEdit->setTextColor(Qt::yellow);
             outputEdit->append(tr("Compilation warning:\n") + warning);
+            QString currentTime = QDateTime::currentDateTime().toString("yyyyMMdd-HH-mm-ss");
             logEdit->setTextColor(Qt::yellow);
-            logEdit->append(tr("Compilation warning"));
+            logEdit->append(currentTime + ": Compilation warning");
         });
 
         fxcCompilerInstance->compile(inputEdit->toPlainText(), shaderModel, entryPoint, shaderType, includePaths, macros);
@@ -356,23 +363,26 @@ void DocumentWindow::compile()
         
         connect(dxcCompilerInstance, &dxcCompiler::compilationFinished, this, [this](const QString &output) {
             outputEdit->setTextColor(Qt::green);
-            outputEdit->append(tr("Compilation succeeded:\n") + output);
+            outputEdit->append(output);
+            QString currentTime = QDateTime::currentDateTime().toString("yyyyMMdd-HH-mm-ss");
             logEdit->setTextColor(Qt::green);
-            logEdit->append(tr("Compilation succeeded"));
+            logEdit->append(currentTime + ": Compilation succeeded");
         });
 
         connect(dxcCompilerInstance, &dxcCompiler::compilationError, this, [this](const QString &error) {
             outputEdit->setTextColor(Qt::red);
             outputEdit->append(tr("Compilation error:\n") + error);
+            QString currentTime = QDateTime::currentDateTime().toString("yyyyMMdd-HH-mm-ss");
             logEdit->setTextColor(Qt::red);
-            logEdit->append(tr("Compilation failed"));
+            logEdit->append(currentTime + ": Compilation failed");
         });
 
         connect(dxcCompilerInstance, &dxcCompiler::compilationWarning, this, [this](const QString &warning) {
             outputEdit->setTextColor(Qt::yellow);
             outputEdit->append(tr("Compilation warning:\n") + warning);
+            QString currentTime = QDateTime::currentDateTime().toString("yyyyMMdd-HH-mm-ss");
             logEdit->setTextColor(Qt::yellow);
-            logEdit->append(tr("Compilation warning"));
+            logEdit->append(currentTime + ": Compilation warning");
         });
 
         dxcCompilerInstance->compile(inputEdit->toPlainText(), shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
@@ -381,23 +391,26 @@ void DocumentWindow::compile()
         
         connect(glslangCompilerInstance, &glslangCompiler::compilationFinished, this, [this](const QString &output) {
             outputEdit->setTextColor(Qt::green);
-            outputEdit->append(tr("Compilation succeeded:\n") + output);
+            outputEdit->append(output);
+            QString currentTime = QDateTime::currentDateTime().toString("yyyyMMdd-HH-mm-ss");
             logEdit->setTextColor(Qt::green);
-            logEdit->append(tr("Compilation succeeded"));
+            logEdit->append(currentTime + ": Compilation succeeded");
         });
 
         connect(glslangCompilerInstance, &glslangCompiler::compilationError, this, [this](const QString &error) {
             outputEdit->setTextColor(Qt::red);
             outputEdit->append(tr("Compilation error:\n") + error);
+            QString currentTime = QDateTime::currentDateTime().toString("yyyyMMdd-HH-mm-ss");
             logEdit->setTextColor(Qt::red);
-            logEdit->append(tr("Compilation failed"));
+            logEdit->append(currentTime + ": Compilation failed");
         });
 
         connect(glslangCompilerInstance, &glslangCompiler::compilationWarning, this, [this](const QString &warning) {
             outputEdit->setTextColor(Qt::yellow);
             outputEdit->append(tr("Compilation warning:\n") + warning);
+            QString currentTime = QDateTime::currentDateTime().toString("yyyyMMdd-HH-mm-ss");
             logEdit->setTextColor(Qt::yellow);
-            logEdit->append(tr("Compilation warning"));
+            logEdit->append(currentTime + ": Compilation warning");
         });
 
         glslangCompilerInstance->compile(inputEdit->toPlainText(), languageCombo->currentText(), shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
@@ -406,16 +419,26 @@ void DocumentWindow::compile()
         
         connect(glslangkgverCompilerInstance, &glslangkgverCompiler::compilationFinished, this, [this](const QString &output) {
             outputEdit->setTextColor(Qt::green);
-            outputEdit->append(tr("Compilation succeeded:\n") + output);
+            outputEdit->append(output);
+            QString currentTime = QDateTime::currentDateTime().toString("yyyyMMdd-HH-mm-ss");
             logEdit->setTextColor(Qt::green);
-            logEdit->append(tr("Compilation succeeded"));
+            logEdit->append(currentTime + ": Compilation succeeded");
         });
 
         connect(glslangkgverCompilerInstance, &glslangkgverCompiler::compilationError, this, [this](const QString &error) {
             outputEdit->setTextColor(Qt::red);
             outputEdit->append(tr("Compilation error:\n") + error);
+            QString currentTime = QDateTime::currentDateTime().toString("yyyyMMdd-HH-mm-ss");
             logEdit->setTextColor(Qt::red);
-            logEdit->append(tr("Compilation failed"));
+            logEdit->append(currentTime + ": Compilation failed");
+        });
+
+        connect(glslangkgverCompilerInstance, &glslangkgverCompiler::compilationWarning, this, [this](const QString &warning) {
+            outputEdit->setTextColor(Qt::yellow);
+            outputEdit->append(tr("Compilation warning:\n") + warning);
+            QString currentTime = QDateTime::currentDateTime().toString("yyyyMMdd-HH-mm-ss");
+            logEdit->setTextColor(Qt::yellow);
+            logEdit->append(currentTime + ": Compilation warning");
         });
 
         glslangkgverCompilerInstance->compile(inputEdit->toPlainText(), shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
