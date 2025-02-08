@@ -484,7 +484,7 @@ void MainWindow::onShowDisassembly()
 
 void MainWindow::onResetLayout()
 {
-    resize(1920, 1080);
+    resize(1024, 768);
     // TODO: 重置其他布局设置
 }
 
