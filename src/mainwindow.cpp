@@ -90,6 +90,8 @@ MainWindow::MainWindow(QWidget *parent)
     // 启用鼠标追踪
     setMouseTracking(true);
     centralWidget()->setMouseTracking(true);
+
+    qApp->installEventFilter(this);
 }
 
 MainWindow::~MainWindow()
@@ -197,10 +199,12 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
                         showNormal();
                         maxButton->setIcon(QIcon(":/resources/icons/maxicon.png"));
                         maxButton->setToolTip(tr("maximize"));
+                        return true;
                     } else {
                         showMaximized();
                         maxButton->setIcon(QIcon(":/resources/icons/returnicon.png"));
                         maxButton->setToolTip(tr("restore"));
+                        return true;
                     }
                 }
                 break;
@@ -211,14 +215,23 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
                 if (!isPressOnButton && !isDoubleClick && (mouseEvent->buttons() & Qt::LeftButton)) {
                     if (isMaximized()) {
                         // 在最大化状态下拖动时还原窗口
-                        double ratio = static_cast<double>(mouseEvent->globalPos().x()) / 
-                                     QGuiApplication::primaryScreen()->geometry().width();
+                        QRect geo = normalGeometry();
                         showNormal();
-                        mouseQPoint = QPoint(width() * ratio, mouseQPoint.y());
+
                         maxButton->setIcon(QIcon(":/resources/icons/maxicon.png"));
                         maxButton->setToolTip(tr("maximize"));
+
+                        geo.moveLeft(mouseEvent->globalPos().x() - geo.width() / 2);
+                        geo.moveTop(mouseEvent->globalPos().y());
+
+                        setGeometry(geo);
+
+                        mouseQPoint = mouseEvent->globalPos() - this->pos();
                     }
-                    move(mouseEvent->globalPos() - mouseQPoint);
+                    else
+                    {
+                        move(mouseEvent->globalPos() - mouseQPoint);
+                    }
                 }
                 break;
             }
@@ -230,6 +243,79 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
             }
         }
     }
+
+    if (obj != menuBar() && !resizing && event->type() == QEvent::MouseButtonPress)
+    {
+        QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+        if (mouseEvent->button() == Qt::LeftButton) {
+            if (mouseEvent->pos().y() <= RESIZE_MARGIN) {
+                resizing = true;
+                resizeEdge = Qt::TopEdge;
+            }
+            else if (mouseEvent->pos().y() >= height() - RESIZE_MARGIN) {
+                resizing = true;
+                resizeEdge = Qt::BottomEdge;
+            }
+            else if (mouseEvent->pos().x() <= RESIZE_MARGIN) {
+                resizing = true;
+                resizeEdge = Qt::LeftEdge;
+            }
+            else if (mouseEvent->pos().x() >= width() - RESIZE_MARGIN) {
+                resizing = true;
+                resizeEdge = Qt::RightEdge;
+            }
+            mouseQPoint = mouseEvent->globalPos();
+        }
+    }
+
+    if (event->type() == QEvent::MouseMove)
+    {
+        QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+
+        if (resizing && (mouseEvent->buttons() & Qt::LeftButton)) {
+            QPoint delta = mouseEvent->globalPos() - mouseQPoint;
+            QRect geo = geometry();
+
+            if (resizeEdge & Qt::LeftEdge) {
+                geo.setLeft(geo.left() + delta.x());
+            }
+            if (resizeEdge & Qt::RightEdge) {
+                geo.setRight(geo.right() + delta.x());
+            }
+            if (resizeEdge & Qt::TopEdge) {
+                geo.setTop(geo.top() + delta.y());
+            }
+            if (resizeEdge & Qt::BottomEdge) {
+                geo.setBottom(geo.bottom() + delta.y());
+            }
+
+            setGeometry(geo);
+            mouseQPoint = mouseEvent->globalPos();
+        }
+
+        if (obj == this) {
+            // 更新鼠标样式
+            if (mouseEvent->pos().y() <= RESIZE_MARGIN || mouseEvent->pos().y() >= height() - RESIZE_MARGIN) {
+                setCursor(Qt::SizeVerCursor);
+            }
+            else if (mouseEvent->pos().x() <= RESIZE_MARGIN || mouseEvent->pos().x() >= width() - RESIZE_MARGIN) {
+                setCursor(Qt::SizeHorCursor);
+            }
+            else {
+                setCursor(Qt::ArrowCursor);
+            }
+        }
+        else if (!resizing) {
+            setCursor(Qt::ArrowCursor);
+        }
+    }
+
+    if (event->type() == QEvent::MouseButtonRelease)
+    {
+        resizing = false;
+        resizeEdge = Qt::Edge();
+    }
+
     return QMainWindow::eventFilter(obj, event);
 }
 
@@ -698,61 +784,14 @@ void MainWindow::updateButtonPositions()
 
 void MainWindow::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton) {
-        if (event->pos().y() <= RESIZE_MARGIN) {
-            resizing = true;
-            resizeEdge = Qt::TopEdge;
-        } else if (event->pos().y() >= height() - RESIZE_MARGIN) {
-            resizing = true;
-            resizeEdge = Qt::BottomEdge;
-        } else if (event->pos().x() <= RESIZE_MARGIN) {
-            resizing = true;
-            resizeEdge = Qt::LeftEdge;
-        } else if (event->pos().x() >= width() - RESIZE_MARGIN) {
-            resizing = true;
-            resizeEdge = Qt::RightEdge;
-        }
-        mouseQPoint = event->globalPos();
-    }
 }
 
 void MainWindow::mouseMoveEvent(QMouseEvent *event)
 {
-    if (resizing && (event->buttons() & Qt::LeftButton)) {
-        QPoint delta = event->globalPos() - mouseQPoint;
-        QRect geo = geometry();
-
-        if (resizeEdge & Qt::LeftEdge) {
-            geo.setLeft(geo.left() + delta.x());
-        }
-        if (resizeEdge & Qt::RightEdge) {
-            geo.setRight(geo.right() + delta.x());
-        }
-        if (resizeEdge & Qt::TopEdge) {
-            geo.setTop(geo.top() + delta.y());
-        }
-        if (resizeEdge & Qt::BottomEdge) {
-            geo.setBottom(geo.bottom() + delta.y());
-        }
-
-        setGeometry(geo);
-        mouseQPoint = event->globalPos();
-    } else {
-        // 更新鼠标样式
-        if (event->pos().y() <= RESIZE_MARGIN || event->pos().y() >= height() - RESIZE_MARGIN) {
-            setCursor(Qt::SizeVerCursor);
-        } else if (event->pos().x() <= RESIZE_MARGIN || event->pos().x() >= width() - RESIZE_MARGIN) {
-            setCursor(Qt::SizeHorCursor);
-        } else {
-            setCursor(Qt::ArrowCursor);
-        }
-    }
 }
 
 void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 {
-    resizing = false;
-    resizeEdge = Qt::Edge();
     QMainWindow::mouseReleaseEvent(event);
 }
 
