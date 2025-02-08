@@ -1,4 +1,5 @@
 #include "glslkgverCodePrebuilder.h"
+#include <QRegularExpression>
 
 // 构造函数，初始化基础目录和包含路径
 GlslKgverCodePrebuilder::GlslKgverCodePrebuilder(const QStringList &includePaths) 
@@ -44,11 +45,18 @@ QString LoadBaseMacroInc()
 
 // 解析着色器代码
 QString GlslKgverCodePrebuilder::parse(const QString &shaderCode, const QString &startSection) {
+    globalLineIter = 0;
+    codeRecords.clear();
+    content.clear();
+
     // 解析代码块
     initCodeSections(mainFile, shaderCode);
-    QString content = parseCodeSections(mainFile, startSection, 0);
+    content = parseCodeSections(mainFile, startSection, 0);
+
     QString contentBaseMacroInc = LoadBaseMacroInc() + "\n";
-    content = replaceAutoBind(contentBaseMacroInc + content);
+    addToHead(contentBaseMacroInc, "external/glslkgver/macros.cginc", "");
+
+    content = replaceAutoBind(content);
     return content;
 }
 
@@ -71,7 +79,12 @@ QString GlslKgverCodePrebuilder::handleInclude(const CodeIncludeFile &currentFil
     if (filePath.endsWith(".cginc")) {
         QString fileName = filePath.mid(filePath.lastIndexOf('/') + 1);
         QString cgincPath = "external/glslkgver/" + fileName;
-        return LoadCginc(cgincPath) + "\n";
+
+        QString cgincContent = LoadCginc(cgincPath) + "\n";
+        QStringList lines = cgincContent.split('\n');
+
+        AddCodeRecords(lines.size(), 0, cgincPath, "");
+        return cgincContent;
     }
 
     QString sectionName;
@@ -105,13 +118,25 @@ QString GlslKgverCodePrebuilder::parseCodeSections(const CodeIncludeFile &includ
     QStringList lines = includeFile.codeSections[startSection].content.split('\n');
     QStringList processedLines;
 
+    int pushedNumLines = 0;
+    int travelNumLines = 0;
+    int travelLineOffset = 0;
+
     for (const QString &line : lines) {
+
         // 忽略以 @ 或 @@ 开头的行
         if (line.startsWith("@") || line.startsWith("@@")) {
+            travelNumLines++;
             continue; // 跳过该行
         }
 
         if (line.startsWith("#include")) {
+            if (pushedNumLines > 0)
+            {
+                AddCodeRecords(pushedNumLines, travelLineOffset, includeFile.filePath, startSection);
+                pushedNumLines = 0;
+            }
+
             QString includeContent = handleInclude(includeFile, line, depth + 1);
             if (!includeContent.isEmpty()) {
                 processedLines.append(includeContent);
@@ -119,11 +144,36 @@ QString GlslKgverCodePrebuilder::parseCodeSections(const CodeIncludeFile &includ
                 return "";
             }
         } else {
+            if (pushedNumLines == 0)
+            {
+                travelLineOffset = travelNumLines;
+            }
+
+            pushedNumLines++;
             processedLines.append(line);
         }
+
+        travelNumLines++;
+    }
+
+    if (pushedNumLines > 0)
+    {
+        AddCodeRecords(pushedNumLines, travelLineOffset, includeFile.filePath, startSection);
+        pushedNumLines = 0;
+        travelLineOffset = travelNumLines;
     }
 
     return processedLines.join('\n');
+}
+
+void GlslKgverCodePrebuilder::AddCodeRecords(int numLines, int sectionLocalLineOffset, const QString& IncludeFile, const QString& Section)
+{
+    if (numLines > 0)
+    {
+        CodeRecord rec = { IncludeFile, Section, globalLineIter, globalLineIter + numLines, sectionLocalLineOffset };
+        codeRecords.emplace_back(rec);
+        globalLineIter += numLines;
+    }
 }
 
 QString GlslKgverCodePrebuilder::replaceAutoBind(const QString &shaderCode)
@@ -155,14 +205,82 @@ QString GlslKgverCodePrebuilder::replaceAutoBind(const QString &shaderCode)
     return lines.join('\n');
 }
 
+void GlslKgverCodePrebuilder::addToHead(const QString& headCode, const QString& headFileName, const QString& sectionName)
+{
+    QStringList lines = headCode.split('\n');
+    int numLines = lines.size();
+
+    content = headCode + content;
+
+    for (auto& rec : codeRecords)
+    {
+        rec.globalLineStart += numLines;
+        rec.globalLineEnd += numLines;
+    }
+
+    globalLineIter += numLines;
+
+    CodeRecord rec = { headFileName, sectionName, 0, numLines, 0 };
+    codeRecords.insert(codeRecords.begin(), rec);
+}
+
+bool GlslKgverCodePrebuilder::matchGlobalLine(int globalLineNum, CodeFileLineInfo &retInfo)
+{
+    if (globalLineNum < 0)
+        return false;
+
+    for (const auto& rec : codeRecords)
+    {
+        if (globalLineNum >= rec.globalLineStart && globalLineNum < rec.globalLineEnd)
+        {
+            int includeSectionStart;
+            QString lowIncludeFile = rec.IncludeFile.toLower();
+
+            bool bCgincFile = lowIncludeFile.contains(".cginc");
+            if (bCgincFile)
+            {
+                includeSectionStart = 0;
+            }
+            else
+            {
+                bool bFound = false;
+                for (const auto& iter : includedFiles)
+                {
+                    if (iter.filePath == lowIncludeFile)
+                    {
+                        auto& codeSection = iter.codeSections[rec.Section];
+                        includeSectionStart = codeSection.lineStart;
+                        bFound = true;
+                        break;
+                    }
+                }
+
+                if (!bFound)
+                    includeSectionStart = mainFile.codeSections[rec.Section].lineStart;
+            }
+
+            retInfo.includeFile = rec.IncludeFile;
+            retInfo.inlineNum = globalLineNum - rec.globalLineStart + rec.sectionLocalLineOffset + includeSectionStart;
+            return true;
+        }
+    }
+    return false;
+}
+
 // 解析代码块
 void GlslKgverCodePrebuilder::initCodeSections(CodeIncludeFile &includeFile, const QString &shaderCode)
 {
     QStringList lines = shaderCode.split('\n');
     QString currentSectionName;
     QString currentSectionContent;
+    int lineIter = 0;
+    int lineStart = 0;
+    int lineEnd = 0;
 
-    for (const QString &line : lines) {
+    for (const QString &line : lines) { 
+        lineEnd++;
+        lineIter++;
+
         // 跳过以@或@@开头的行
         if (line.startsWith("@") || line.startsWith("@@")) {
             continue;
@@ -172,10 +290,13 @@ void GlslKgverCodePrebuilder::initCodeSections(CodeIncludeFile &includeFile, con
             // 处理代码块定义
             if (!currentSectionName.isEmpty()) {
                 // 存储之前的代码块
-                includeFile.codeSections[currentSectionName] = {currentSectionName, currentSectionContent};
+                includeFile.codeSections[currentSectionName] = {currentSectionName, currentSectionContent, lineStart, lineEnd };
             }
             currentSectionName = line.mid(1, line.length() - 2); // 获取代码块名称
             currentSectionContent.clear(); // 清空当前内容
+
+            lineStart = lineIter;
+            lineEnd = lineIter;
         } else {
             currentSectionContent.append(line + "\n"); // 添加到当前代码块内容
         }
@@ -183,10 +304,10 @@ void GlslKgverCodePrebuilder::initCodeSections(CodeIncludeFile &includeFile, con
 
     if (!currentSectionName.isEmpty()) {
         // 存储最后一个代码块
-        includeFile.codeSections[currentSectionName] = { currentSectionName, currentSectionContent };
+        includeFile.codeSections[currentSectionName] = { currentSectionName, currentSectionContent, lineStart, lineEnd };
     } else if (!currentSectionContent.isEmpty() && includeFile.codeSections.empty()) {
         // 如果当前代码块内容不为空且包含文件没有代码块，则将当前代码块内容作为默认代码块
-        includeFile.codeSections[""] = {"", currentSectionContent};
+        includeFile.codeSections[""] = {"", currentSectionContent, lineStart, lineEnd};
     }
 }
 
@@ -221,7 +342,7 @@ CodeIncludeFile GlslKgverCodePrebuilder::getIncludeFile(const QString &filePath)
         includeFile.close();
 
         CodeIncludeFile includeFileInstance;
-        includeFileInstance.filePath = includeFile.fileName(); // 获取完整路径
+        includeFileInstance.filePath = includeFile.fileName().toLower(); // 获取完整路径
         initCodeSections(includeFileInstance, content);
         if (includeFileInstance.codeSections.isEmpty()) {
             qWarning() << "Failed to parse include file:" << includeFile.fileName();
@@ -233,4 +354,37 @@ CodeIncludeFile GlslKgverCodePrebuilder::getIncludeFile(const QString &filePath)
 
     qWarning() << "Failed to open include file:" << filePath;
     return CodeIncludeFile(); // 返回空字符串表示无法处理
+}
+
+QString TransformGlslKgverCodeErrors(GlslKgverCodePrebuilder &codePrebuilder, const QString& integrateCodeFileName, const QString& errorString)
+{
+    QStringList lines = errorString.split('\n');
+    QString errorHeader = QString("ERROR: ") + integrateCodeFileName + QString(":");
+
+    for (QString &line : lines)
+    {
+        bool isErrMsg = line.startsWith(errorHeader);
+        if (isErrMsg)
+        {
+            QString errorMid = line.mid(errorHeader.length());
+            QString globalLineNum = errorMid.mid(0, errorMid.indexOf(":")); // 提取行号
+            QString errorContent = errorMid.mid(errorMid.indexOf(":") + 1); // 提取错误内容
+
+            GlslKgverCodePrebuilder::CodeFileLineInfo errFileLineInfo;
+            bool bret = codePrebuilder.matchGlobalLine(globalLineNum.toInt() - 4/*错误信息总会多4行？*/, errFileLineInfo);
+            if (bret)
+            {
+                if (errFileLineInfo.includeFile.isEmpty())
+                {
+                    errFileLineInfo.includeFile = "textEditor";
+                }
+                line = QString("ERROR: %1(line: %2, global: %3)%4")
+                    .arg(errFileLineInfo.includeFile)
+                    .arg(QString::number(errFileLineInfo.inlineNum + 1)) // 确保转换为字符串, 编辑器计数从1开始
+                    .arg(globalLineNum)
+                    .arg(errorContent);
+            }
+        }
+    }
+    return lines.join('\n');
 }

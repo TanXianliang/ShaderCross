@@ -75,7 +75,10 @@ void glslangkgverCompiler::compile(const QString &shaderCode,
     // 判断编译是否成功
     if (!QFile::exists(outputFilePath)) {
         if (!output.isEmpty())
-            emit compilationError(output);
+        {
+            error = TransformGlslKgverCodeErrors(codePrebuilder, tempFilePath, output);
+            emit compilationError(error);
+        }
         else
             emit compilationError(error.isEmpty() ? "Compilation failed with no output." : error);
     } else {

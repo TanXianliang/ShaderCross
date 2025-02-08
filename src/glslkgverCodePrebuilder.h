@@ -15,6 +15,8 @@ class CodeSection {
 public:
     QString name; // 代码块名称
     QString content; // 代码块内容
+    int lineStart;
+    int lineEnd;
 };
 
 class CodeIncludeFile
@@ -30,6 +32,13 @@ public:
     
     // 解析着色器代码
     QString parse(const QString &shaderCode, const QString &startSection);
+
+    struct CodeFileLineInfo
+    {
+        QString includeFile;
+        int inlineNum;
+    };
+    bool matchGlobalLine(int globalLineNum, CodeFileLineInfo& retInfo);
 
 private:
     // 初始化包含代码文件
@@ -47,11 +56,30 @@ private:
     // 替换autobind
     QString replaceAutoBind(const QString& shaderCode);
 
+    // headCode添加到代码前端
+    void addToHead(const QString& headCode, const QString& headFileName, const QString& sectionName);
+
 private:
+    QString content;
     QStringList includePaths; // 包含路径
     CodeIncludeFile mainFile; // 当前包含起始文件
     QMap<QString, CodeIncludeFile> includedFiles; // 包含的文件集合
     int includeDepth; // 当前包含深度
+
+    struct CodeRecord
+    {
+        QString IncludeFile;
+        QString Section;
+        int globalLineStart;
+        int globalLineEnd;
+        int sectionLocalLineOffset;
+    };
+    std::vector<CodeRecord> codeRecords;
+    int globalLineIter;
+
+    void AddCodeRecords(int numLines, int sectionLocalLineOffset, const QString &IncludeFile, const QString &Section);
 };
+
+QString TransformGlslKgverCodeErrors(GlslKgverCodePrebuilder& codePrebuilder, const QString& integrateCodeFileName, const QString& errorString);
 
 #endif // GLSLKGVERCODEPREBUILDER_H
