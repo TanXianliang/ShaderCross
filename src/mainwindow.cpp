@@ -249,23 +249,26 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
         }
     }
 
-    // 检查是否是当前窗口的鼠标按下事件
+    // 检查是否是主窗口的鼠标按下事件
     if (obj == this && !resizing && !isMaximized() && event->type() == QEvent::MouseButtonPress)
     {
         QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
         if (mouseEvent->button() == Qt::LeftButton) {
+            resizeEdge = Qt::Edge();
+
             // 检查鼠标位置以确定是否开始调整大小
             if (mouseEvent->pos().y() >= height() - RESIZE_MARGIN) {
                 resizing = true; // 开始调整大小
-                resizeEdge = Qt::BottomEdge; // 设置调整边缘为底部
+                resizeEdge |= Qt::BottomEdge; // 设置调整边缘为底部
             }
-            else if (mouseEvent->pos().x() <= RESIZE_MARGIN) {
+
+            if (mouseEvent->pos().x() <= RESIZE_MARGIN) {
                 resizing = true; // 开始调整大小
-                resizeEdge = Qt::LeftEdge; // 设置调整边缘为左侧
+                resizeEdge |= Qt::LeftEdge; // 设置调整边缘为左侧
             }
             else if (mouseEvent->pos().x() >= width() - RESIZE_MARGIN) {
                 resizing = true; // 开始调整大小
-                resizeEdge = Qt::RightEdge; // 设置调整边缘为右侧
+                resizeEdge |= Qt::RightEdge; // 设置调整边缘为右侧
             }
             mouseQPoint = mouseEvent->globalPos(); // 记录鼠标位置
         }
@@ -300,7 +303,13 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
         // 更新鼠标样式
         if (obj == this) {
-            if (mouseEvent->pos().y() <= RESIZE_MARGIN || mouseEvent->pos().y() >= height() - RESIZE_MARGIN) {
+            if (mouseEvent->pos().x() <= RESIZE_MARGIN && mouseEvent->pos().y() >= height() - RESIZE_MARGIN) {
+                setCursor(Qt::SizeBDiagCursor);
+            }
+            else if (mouseEvent->pos().x() >= width() - RESIZE_MARGIN && mouseEvent->pos().y() >= height() - RESIZE_MARGIN) {
+                setCursor(Qt::SizeFDiagCursor);
+            }
+            else if (mouseEvent->pos().y() <= RESIZE_MARGIN || mouseEvent->pos().y() >= height() - RESIZE_MARGIN) {
                 setCursor(Qt::SizeVerCursor); // 设置为垂直调整大小光标
             }
             else if (mouseEvent->pos().x() <= RESIZE_MARGIN || mouseEvent->pos().x() >= width() - RESIZE_MARGIN) {
