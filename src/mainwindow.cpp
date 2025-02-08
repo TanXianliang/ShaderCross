@@ -139,8 +139,11 @@ void MainWindow::createMenus()
     
     QMenu *fileMenu = bar->addMenu(tr("File"));
     fileMenu->addAction(tr("New Document"), this, &MainWindow::onNewDocument, QKeySequence::New);
-    fileMenu->addAction(tr("Open"), this, [this](){ if (currentDocument) currentDocument->onBrowseFile(); }, QKeySequence::Open);
-    fileMenu->addAction(tr("Save"), this, &MainWindow::onSaveResult, QKeySequence::Save);
+    fileMenu->addSeparator();
+    fileMenu->addAction(tr("Open Workspace"), this, &MainWindow::onNewDocumentByOpenWorkspace);
+    fileMenu->addSeparator();
+    fileMenu->addAction(tr("Save Code"), this, &MainWindow::onSaveResult, QKeySequence::Save);
+    fileMenu->addAction(tr("Save Workspace"), this, &MainWindow::onSaveWorkspace);
     
     QMenu *editMenu = bar->addMenu(tr("Edit"));
     editMenu->addAction(tr("Undo"), this, [this](){ if (currentDocument) currentDocument->undo(); }, QKeySequence::Undo);
@@ -244,15 +247,11 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
         }
     }
 
-    if (obj != menuBar() && !resizing && event->type() == QEvent::MouseButtonPress)
+    if (obj != menuBar() && !resizing && !isMaximized() && event->type() == QEvent::MouseButtonPress)
     {
         QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
         if (mouseEvent->button() == Qt::LeftButton) {
-            if (mouseEvent->pos().y() <= RESIZE_MARGIN) {
-                resizing = true;
-                resizeEdge = Qt::TopEdge;
-            }
-            else if (mouseEvent->pos().y() >= height() - RESIZE_MARGIN) {
+            if (mouseEvent->pos().y() >= height() - RESIZE_MARGIN) {
                 resizing = true;
                 resizeEdge = Qt::BottomEdge;
             }
@@ -356,15 +355,67 @@ void MainWindow::onNewDocument()
     newDocument->show(); // 显示新文档窗口
 }
 
+void MainWindow::onNewDocumentByOpenWorkspace()
+{
+    QString documentName;
+    bool ok = false;
+    static int documentIndex = 0;
+
+    QString filePath = QFileDialog::getOpenFileName(
+        this,
+        tr("Open Workspace Setting"),
+        QString(),
+        tr("Workspace Setting (*.ini);;All Files (*.*)")
+    );
+
+    if (!filePath.isEmpty()) {
+        do {
+            // 弹出对话框输入文档名称
+            documentName = QInputDialog::getText(this, QString("Document Naming"), QString("Name:"), QLineEdit::Normal, QString("untitled-%1").arg(documentIndex), &ok);
+            if (!ok || documentName.isEmpty()) {
+                return; // 如果用户取消或输入为空，则返回
+            }
+            documentIndex++; // 递增索引
+
+            // 检查是否存在同名文档
+            for (int i = 0; i < tabWidget->count(); ++i) {
+                if (tabWidget->tabText(i).toLower() == documentName.toLower()) {
+                    ok = false;
+                    break;
+                }
+            }
+
+            if (!ok) {
+                QMessageBox::warning(this, QString("Warnings"), QString("The document name already exists, please rename it."));
+            }
+
+            // 创建新的 DocumentWindow 实例
+            documentName = documentName.toLower();
+            DocumentWindow* newDocument = new DocumentWindow(this, documentName, filePath);
+
+            // 将新文档添加到 Tab 控件
+            int tabIndex = tabWidget->addTab(newDocument, documentName);
+            tabWidget->tabBar()->setTabsClosable(true); // 启用关闭按钮
+            newDocument->show(); // 显示新文档窗口
+        } while (!ok);
+    }
+}
+
 void MainWindow::onSaveResult()
 {
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Compilation Result"), QString(), tr("All Files (*.*)"));
-    if (!fileName.isEmpty()) {
-        QWidget* tab = tabWidget->currentWidget();
-        if (tab) {
-            // 获取tab的documentWindow
-            DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab);
-            if (documentWindow) {
+    QWidget* tab = tabWidget->currentWidget();
+    if (tab) {
+        // 获取tab的documentWindow
+        DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab);
+        if (documentWindow) {
+            QString title = documentWindow->getDocumentWindowTitle();
+            QString language = documentWindow->getLanguage();
+
+            QString defaultFilePath = title + "." + language;
+            defaultFilePath = defaultFilePath.toLower();
+
+            QString fileName = QFileDialog::getSaveFileName(this, tr("Save Code"), defaultFilePath, tr("All Files (*.*)"));
+            if (!fileName.isEmpty()) {
                 auto content = documentWindow->getContent();
                 QFile file(fileName);
                 if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -372,17 +423,38 @@ void MainWindow::onSaveResult()
 
                     if (documentWindow->getEncoding() == "UTF-8") {
                         out.setCodec("UTF-8");
-                    } else if (documentWindow->getEncoding() == "GB2312") {
+                    }
+                    else if (documentWindow->getEncoding() == "GB2312") {
                         out.setCodec("GB2312");
-                    } else if (documentWindow->getEncoding() == "GBK") {
+                    }
+                    else if (documentWindow->getEncoding() == "GBK") {
                         out.setCodec("GBK");
                     }
-                    
+
                     out << content; // 将内容写入文件
                     file.close();
-                } else {
+                }
+                else {
                     QMessageBox::warning(this, QString("Warnings"), QString("Saving file failed."));
                 }
+            }
+        }
+    }
+}
+
+void MainWindow::onSaveWorkspace()
+{
+    QWidget* tab = tabWidget->currentWidget();
+    if (tab) {
+        // 获取tab的documentWindow
+        DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab);
+        QString defaultFilePath = documentWindow->getDocumentWindowTitle() + ".ini";
+        defaultFilePath = defaultFilePath.toLower();
+
+        if (documentWindow) {
+            QString fileName = QFileDialog::getSaveFileName(this, tr("Save Workspace"), defaultFilePath, tr("Setting Files (*.ini)"));
+            if (!fileName.isEmpty()) {
+                documentWindow->saveSettings(fileName);
             }
         }
     }

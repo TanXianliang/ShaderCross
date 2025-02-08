@@ -27,14 +27,28 @@ DocumentWindow::DocumentWindow(QWidget *parent, const QString &documentTitle)
     setAttribute(Qt::WA_DeleteOnClose);
     setupUI();
     setupConnections();
-    loadSettings();
+    loadSettings(settingsFilePath());
+}
+
+DocumentWindow::DocumentWindow(QWidget *parent, const QString &documentTitle, const QString &workspaceSettingPath)
+    : QMainWindow(parent)
+    , documentWindowTitle(documentTitle)
+    , lastHLSLCompiler("DXC")
+    , lastGLSLCompiler("GLSLANG")
+    , lastOpenDir(QDir::currentPath())
+    , isSaveSettings(true)
+{
+    setAttribute(Qt::WA_DeleteOnClose);
+    setupUI();
+    setupConnections();
+    loadSettings(workspaceSettingPath);
 }
 
  // Start of Selection
 DocumentWindow::~DocumentWindow()
 {
     if (isSaveSettings) {
-        saveSettings(); 
+        saveSettings(settingsFilePath()); 
     } else {
         // 删除settings文件
         QString settingsPath = settingsFilePath();
@@ -582,9 +596,8 @@ QString DocumentWindow::settingsFilePath() const
     return configPath + "/temp_docs/" + documentWindowTitle + ".ini";  // 返回完整的配置文件路径
 }
 
-void DocumentWindow::loadSettings()
+void DocumentWindow::loadSettings(QString settingsPath)
 {
-    QString settingsPath = settingsFilePath();
     QSettings settings(settingsPath, QSettings::IniFormat);
     
     // 恢复语言设置
@@ -629,9 +642,8 @@ void DocumentWindow::loadSettings()
     inputEdit->setPlainText(settings.value("inputContent").toString());
 }
 
-void DocumentWindow::saveSettings()
+void DocumentWindow::saveSettings(QString settingsPath)
 {
-    QString settingsPath = settingsFilePath();
     QSettings settings(settingsPath, QSettings::IniFormat);
     
     // 保存语言设置
@@ -745,4 +757,9 @@ QString DocumentWindow::getContent()
 QString DocumentWindow::getEncoding()
 {
     return encodingCombo->currentText();
+}
+
+QString DocumentWindow::getLanguage()
+{
+    return languageCombo->currentText();
 }

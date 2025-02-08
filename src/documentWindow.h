@@ -18,6 +18,7 @@ class DocumentWindow : public QMainWindow
 
 public:
     explicit DocumentWindow(QWidget *parent = nullptr, const QString &documentTitle = "untitled");
+    explicit DocumentWindow(QWidget *parent, const QString &documentTitle, const QString &workspaceSettingPath);
     ~DocumentWindow();
 
     void enableSave(bool enable);
@@ -37,13 +38,17 @@ public slots:
     void redo();
     QString getContent();
     QString getEncoding();
+    QString getLanguage();
+    QString getDocumentWindowTitle() { return documentWindowTitle; }
+
+public:
+    void loadSettings(QString settingsPath);
+    void saveSettings(QString settingsPath);
 
 private:
     void setupUI();
     void setupConnections();
     QString settingsFilePath() const;
-    void loadSettings();
-    void saveSettings();
 
 private:
     QString documentWindowTitle;

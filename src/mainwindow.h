@@ -37,7 +37,9 @@ protected:
 
 public slots:
     void onNewDocument();
+    void onNewDocumentByOpenWorkspace();
     void onSaveResult();
+    void onSaveWorkspace();
     void onShowDisassembly();
     void onResetLayout();
     void onToggleTheme();
