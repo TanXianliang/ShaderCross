@@ -452,6 +452,11 @@ void MainWindow::applyTheme(bool dark)
                 border: 1px solid #2d2d2d;
             }
 
+            QTabWidget::pane {
+                background-color: #252526;
+                border: 1px solid 2d2d2d;
+            }
+
             QTabBar {
                 background-color: #252526;
                 color: #d4d4d4;
@@ -612,6 +617,10 @@ void MainWindow::applyTheme(bool dark)
 
             QTabBar::tab:hover {
                 background: #d8d8d8;
+            }
+
+            QTabBar::close-button {
+                image: url(:/resources/icons/closeicon.png); /* 设置关闭图标 */
             }
         )";
         setStyleSheet(lightStyle);
