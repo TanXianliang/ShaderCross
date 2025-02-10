@@ -35,7 +35,6 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , isDarkTheme(true)
     , resizing(false)
-    , currentDocument(nullptr)
 {
     // 修改窗口标志，添加系统菜单和最小化最大化按钮的支持
     setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | 
@@ -96,11 +95,6 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    if (currentDocument) {
-        delete currentDocument;
-        currentDocument = nullptr;
-    };
-
     saveSettings();  // 在析构时保存设置
 }
 
@@ -146,21 +140,21 @@ void MainWindow::createMenus()
     fileMenu->addAction(tr("Save Workspace"), this, &MainWindow::onSaveWorkspace);
 
     QMenu* uiMenu = bar->addMenu(tr("VIEW"));
-    uiMenu->addAction(tr("Includes List"), this, &MainWindow::onToggleCurrentDocumentIncludePaths);
-    uiMenu->addAction(tr("Macros List"), this, &MainWindow::onToggleCurrentDocumentMacros);
+    uiMenu->addAction(tr("Includes List"), this, &MainWindow::onToggleCurrentDocumentIncludePaths, QKeySequence(Qt::CTRL | Qt::Key_I));
+    uiMenu->addAction(tr("Macros List"), this, &MainWindow::onToggleCurrentDocumentMacros, QKeySequence(Qt::CTRL | Qt::Key_M));
 
     uiMenu->addSeparator();
     uiMenu->addAction(tr("Reset Layout"), this, &MainWindow::onResetLayout);
 
     uiMenu->addSeparator();
-    uiMenu->addAction(tr("Toggle Theme"), this, &MainWindow::onToggleTheme, QKeySequence(Qt::CTRL | Qt::Key_T));
+    uiMenu->addAction(tr("Toggle Theme"), this, &MainWindow::onToggleTheme);
     
     QMenu *editMenu = bar->addMenu(tr("EDIT"));
-    editMenu->addAction(tr("Undo"), this, [this](){ if (currentDocument) currentDocument->undo(); }, QKeySequence::Undo);
-    editMenu->addAction(tr("Redo"), this, [this](){ if (currentDocument) currentDocument->redo(); }, QKeySequence::Redo);
+    editMenu->addAction(tr("Undo"), this, [this](){ DocumentWindow* currentDocument = getCurrentDocumentWindow(); if (currentDocument) currentDocument->undo(); }, QKeySequence::Undo);
+    editMenu->addAction(tr("Redo"), this, [this](){ DocumentWindow* currentDocument = getCurrentDocumentWindow(); if (currentDocument) currentDocument->redo(); }, QKeySequence::Redo);
     
     QMenu *buildMenu = bar->addMenu(tr("BUILD"));
-    buildMenu->addAction(tr("Compile"), this, [this](){ if (currentDocument) currentDocument->compile();}, Qt::Key_F5);
+    buildMenu->addAction(tr("Compile"), this, [this](){ DocumentWindow* currentDocument = getCurrentDocumentWindow(); if (currentDocument) currentDocument->compile(); }, Qt::Key_F5);
 
     // 设置菜单栏鼠标事件追踪
     bar->setMouseTracking(true);
@@ -423,41 +417,37 @@ void MainWindow::onNewDocumentByOpenWorkspace()
 
 void MainWindow::onSaveResult()
 {
-    QWidget* tab = tabWidget->currentWidget(); // 获取当前选中的标签页
-    if (tab) {
-        // 获取tab的documentWindow
-        DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab); // 将当前标签页转换为DocumentWindow类型
-        if (documentWindow) {
-            QString title = documentWindow->getDocumentWindowTitle(); // 获取文档标题
-            QString language = documentWindow->getLanguage(); // 获取文档语言
+    DocumentWindow* documentWindow = getCurrentDocumentWindow(); 
+    if (documentWindow) {
+        QString title = documentWindow->getDocumentWindowTitle(); // 获取文档标题
+        QString language = documentWindow->getLanguage(); // 获取文档语言
 
-            QString defaultFilePath = title + "." + language; // 生成默认文件路径
-            defaultFilePath = defaultFilePath.toLower(); // 转换为小写
+        QString defaultFilePath = title + "." + language; // 生成默认文件路径
+        defaultFilePath = defaultFilePath.toLower(); // 转换为小写
 
-            QString fileName = QFileDialog::getSaveFileName(this, tr("Save Code"), defaultFilePath, tr("All Files (*.*)")); // 打开保存文件对话框
-            if (!fileName.isEmpty()) { // 如果用户选择了文件名
-                auto content = documentWindow->getContent(); // 获取文档内容
-                QFile file(fileName); // 创建文件对象
-                if (file.open(QIODevice::WriteOnly | QIODevice::Text)) { // 尝试打开文件进行写入
-                    QTextStream out(&file); // 创建文本流
+        QString fileName = QFileDialog::getSaveFileName(this, tr("Save Code"), defaultFilePath, tr("All Files (*.*)")); // 打开保存文件对话框
+        if (!fileName.isEmpty()) { // 如果用户选择了文件名
+            auto content = documentWindow->getContent(); // 获取文档内容
+            QFile file(fileName); // 创建文件对象
+            if (file.open(QIODevice::WriteOnly | QIODevice::Text)) { // 尝试打开文件进行写入
+                QTextStream out(&file); // 创建文本流
 
-                    // 根据文档编码设置文本流编码
-                    if (documentWindow->getEncoding() == "UTF-8") {
-                        out.setCodec("UTF-8");
-                    }
-                    else if (documentWindow->getEncoding() == "GB2312") {
-                        out.setCodec("GB2312");
-                    }
-                    else if (documentWindow->getEncoding() == "GBK") {
-                        out.setCodec("GBK");
-                    }
-
-                    out << content; // 将内容写入文件
-                    file.close(); // 关闭文件
+                // 根据文档编码设置文本流编码
+                if (documentWindow->getEncoding() == "UTF-8") {
+                    out.setCodec("UTF-8");
                 }
-                else {
-                    QMessageBox::warning(this, QString("Warnings"), QString("Saving file failed.")); // 显示保存失败的警告
+                else if (documentWindow->getEncoding() == "GB2312") {
+                    out.setCodec("GB2312");
                 }
+                else if (documentWindow->getEncoding() == "GBK") {
+                    out.setCodec("GBK");
+                }
+
+                out << content; // 将内容写入文件
+                file.close(); // 关闭文件
+            }
+            else {
+                QMessageBox::warning(this, QString("Warnings"), QString("Saving file failed.")); // 显示保存失败的警告
             }
         }
     }
@@ -465,18 +455,14 @@ void MainWindow::onSaveResult()
 
 void MainWindow::onSaveWorkspace()
 {
-    QWidget* tab = tabWidget->currentWidget(); // 获取当前选中的标签页
-    if (tab) {
-        // 获取tab的documentWindow
-        DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab); // 将当前标签页转换为DocumentWindow类型
-        if (documentWindow) {
-            QString defaultFilePath = documentWindow->getDocumentWindowTitle() + ".ini"; // 生成默认工作区文件路径
-            defaultFilePath = defaultFilePath.toLower(); // 转换为小写
+    DocumentWindow* documentWindow = getCurrentDocumentWindow();
+    if (documentWindow) {
+        QString defaultFilePath = documentWindow->getDocumentWindowTitle() + ".ini"; // 生成默认工作区文件路径
+        defaultFilePath = defaultFilePath.toLower(); // 转换为小写
         
-            QString fileName = QFileDialog::getSaveFileName(this, tr("Save Workspace"), defaultFilePath, tr("Setting Files (*.ini)")); // 打开保存工作区对话框
-            if (!fileName.isEmpty()) { // 如果用户选择了文件名
-                documentWindow->saveSettings(fileName); // 保存文档窗口的设置
-            }
+        QString fileName = QFileDialog::getSaveFileName(this, tr("Save Workspace"), defaultFilePath, tr("Setting Files (*.ini)")); // 打开保存工作区对话框
+        if (!fileName.isEmpty()) { // 如果用户选择了文件名
+            documentWindow->saveSettings(fileName); // 保存文档窗口的设置
         }
     }
 }
@@ -489,25 +475,17 @@ void MainWindow::onResetLayout()
 
 void MainWindow::onToggleCurrentDocumentIncludePaths()
 {
-    QWidget* tab = tabWidget->currentWidget(); // 获取当前选中的标签页
-    if (tab) {
-        // 获取tab的documentWindow
-        DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab);
-        if (documentWindow) {
-            documentWindow->toggleIncludesPathList();
-        }
+    DocumentWindow* documentWindow = getCurrentDocumentWindow();
+    if (documentWindow) {
+        documentWindow->toggleIncludesPathList();
     }
 }
 
 void MainWindow::onToggleCurrentDocumentMacros()
 {
-    QWidget* tab = tabWidget->currentWidget(); // 获取当前选中的标签页
-    if (tab) {
-        // 获取tab的documentWindow
-        DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab);
-        if (documentWindow) {
-            documentWindow->toggleMacroList();
-        }
+    DocumentWindow* documentWindow = getCurrentDocumentWindow();
+    if (documentWindow) {
+        documentWindow->toggleMacroList();
     }
 }
 
@@ -705,10 +683,6 @@ void MainWindow::applyTheme(bool dark)
             }
         )";
         setStyleSheet(darkStyle);
-
-        if (currentDocument) {
-            currentDocument->setStyleSheet(darkStyle);
-        }
     } else {
         // 浅色主题
         QString lightStyle = R"(
@@ -846,9 +820,6 @@ void MainWindow::applyTheme(bool dark)
             }
         )";
         setStyleSheet(lightStyle);
-        if (currentDocument) {
-            currentDocument->setStyleSheet(lightStyle);
-        }
     }
 }
 
@@ -901,6 +872,16 @@ void MainWindow::saveSettings()
     
     // 确保所有设置被写入到文件
     settings.sync();
+}
+
+DocumentWindow* MainWindow::getCurrentDocumentWindow()
+{
+    QWidget* tab = tabWidget->currentWidget(); // 获取当前选中的标签页
+    if (tab) {
+        // 获取tab的documentWindow
+        return dynamic_cast<DocumentWindow*>(tab); // 将当前标签页转换为DocumentWindow类型
+    }
+    return nullptr;
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)

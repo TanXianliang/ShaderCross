@@ -54,6 +54,7 @@ private:
     QString settingsFilePath() const;
     void loadSettings();    
     void saveSettings();
+    DocumentWindow* getCurrentDocumentWindow();
 
     // 主界面UI组件
     QToolButton *closeButton;
@@ -66,9 +67,6 @@ private:
     Qt::Edges resizeEdge;
     static const int RESIZE_MARGIN = 5;  // 边缘调整区域的宽度
     bool isDarkTheme;
-
-    // 添加 DocumentWindow 相关
-    DocumentWindow *currentDocument;
 
     QTabWidget *tabWidget; // 添加 Tab 控件
 };
