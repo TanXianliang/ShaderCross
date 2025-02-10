@@ -117,8 +117,8 @@ void MainWindow::setupUI()
     tabWidget->tabBar()->setTabsClosable(true); // 启用关闭按钮
     tabWidget->tabBar()->setMovable(true); // 允许拖动标签
 
-    //connect(tabWidget, &QTabWidget::tabCloseRequested, this, &MainWindow::onTabCloseRequested);
-    connect(tabWidget->tabBar(), SIGNAL(tabCloseRequested(int)), this, SLOT(onTabCloseRequested(int)));
+    connect(tabWidget->tabBar(), &QTabBar::tabBarDoubleClicked, this, &MainWindow::onTabMouseDoubleClickEvent);
+    connect(tabWidget->tabBar(), &QTabBar::tabCloseRequested, this, &MainWindow::onTabCloseRequested);
 }
 
 void MainWindow::createMenus()
@@ -913,24 +913,32 @@ void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 }
 
 void MainWindow::onTabCloseRequested(int index)
-{ 
-    QWidget *tab = tabWidget->widget(index);
-    if (tab) {
-        // 获取tab的documentWindow
-        DocumentWindow *documentWindow = dynamic_cast<DocumentWindow*>(tab);
-        if (documentWindow) {
-            documentWindow->enableSave(false);
-        }
-        documentWindow = nullptr;
+{
+    if (index < 0)
+        return;
 
-        tabWidget->removeTab(index);
-        delete tab; // 释放内存
+    QWidget* tab = tabWidget->widget(index);
+    if (tab) {
+        DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab);
+        if (documentWindow)
+        {
+            auto reply = QMessageBox::warning(this, QString("Info"), QString("Closing will lose all content. \nDo you want to continue closing?"), QMessageBox::Ok | QMessageBox::Cancel, QMessageBox::Cancel);
+            if (reply == QMessageBox::Ok)
+            {
+                documentWindow->enableSave(false);
+                documentWindow = nullptr;
+
+                tabWidget->removeTab(index);
+                delete tab; // 释放内存
+            }
+        }
     }
 }
 
-void MainWindow::onTabDoubleClicked(int index)
+void MainWindow::onTabMouseDoubleClickEvent(int tabIndex)
 {
-    if (index >= 0) { // 确保索引有效
-        tabWidget->removeTab(index); // 移除标签
+    if (tabIndex >= 0) {
+        emit onTabCloseRequested(tabIndex); // 发射自定义信号
     }
-} 
+}
+ 

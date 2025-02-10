@@ -45,7 +45,7 @@ public slots:
     void onToggleCurrentDocumentMacros();
     void onToggleTheme();
     void onTabCloseRequested(int index);
-    void onTabDoubleClicked(int index);
+    void onTabMouseDoubleClickEvent(int tabIndex);
 
 private:
     void createMenus();
