@@ -23,6 +23,8 @@ DocumentWindow::DocumentWindow(QWidget *parent, const QString &documentTitle)
     , lastGLSLCompiler("GLSLANG")
     , lastOpenDir(QDir::currentPath())
     , isSaveSettings(true)
+    , isIncludeGroupVisible(true)
+    , isMacroGroupVisible(true)
 {
     setAttribute(Qt::WA_DeleteOnClose);
     setupUI();
@@ -37,6 +39,8 @@ DocumentWindow::DocumentWindow(QWidget *parent, const QString &documentTitle, co
     , lastGLSLCompiler("GLSLANG")
     , lastOpenDir(QDir::currentPath())
     , isSaveSettings(true)
+    , isIncludeGroupVisible(true)
+    , isMacroGroupVisible(true)
 {
     setAttribute(Qt::WA_DeleteOnClose);
     setupUI();
@@ -176,7 +180,8 @@ void DocumentWindow::setupUI()
     inputLayout->addWidget(inputEdit, 1);  // 添加拉伸因子1
     
     // 添加包含路径设置
-    QGroupBox *includeGroup = new QGroupBox(tr("Include Paths"), this);
+    includeGroup = new QGroupBox(tr("Include Paths"), this);
+    isIncludeGroupVisible = true;
     QVBoxLayout *includeLayout = new QVBoxLayout(includeGroup);
     
     // 包含路径列表
@@ -195,7 +200,8 @@ void DocumentWindow::setupUI()
     includeLayout->addLayout(includeButtonLayout);  // 将按钮布局添加到主布局
     
     // 添加宏定义设置
-    QGroupBox *macroGroup = new QGroupBox(tr("Macro Definitions"), this);
+    macroGroup = new QGroupBox(tr("Macro Definitions"), this);
+    isMacroGroupVisible = true;
     QVBoxLayout *macroLayout = new QVBoxLayout(macroGroup);
     
     // 宏定义列表
@@ -632,11 +638,25 @@ void DocumentWindow::loadSettings(QString settingsPath)
     QStringList includePaths = settings.value("includePaths").toStringList();
     includePathList->clear();
     includePathList->addItems(includePaths);
+    isIncludeGroupVisible = settings.value("includePathsVisible", true).toBool();
+    if (isIncludeGroupVisible) {
+        includeGroup->show();
+    }
+    else {
+        includeGroup->hide();
+    }
     
     // 恢复宏定义
     QStringList macros = settings.value("macros").toStringList();
     macroList->clear();
     macroList->addItems(macros);
+    isMacroGroupVisible = settings.value("macrosVisible", true).toBool();
+    if (isMacroGroupVisible) {
+        macroGroup->show();
+    }
+    else {
+        macroGroup->hide();
+    }
 
     // 恢复输入框内容
     inputEdit->setPlainText(settings.value("inputContent").toString());
@@ -665,6 +685,7 @@ void DocumentWindow::saveSettings(QString settingsPath)
         includePaths << includePathList->item(i)->text();
     }
     settings.setValue("includePaths", includePaths);
+    settings.setValue("includePathsVisible", isIncludeGroupVisible);
     
     // 保存宏定义
     QStringList macros;
@@ -672,7 +693,8 @@ void DocumentWindow::saveSettings(QString settingsPath)
         macros << macroList->item(i)->text();
     }
     settings.setValue("macros", macros);
-    
+    settings.setValue("macrosVisible", isMacroGroupVisible);
+
     // 保存编译器历史记录
     settings.setValue("lastHLSLCompiler", lastHLSLCompiler);
     settings.setValue("lastGLSLCompiler", lastGLSLCompiler);
@@ -697,6 +719,30 @@ void DocumentWindow::onBrowseFile()
         lastOpenDir = QFileInfo(filePath).absolutePath();
         filePathEdit->setText(filePath);
         loadFileContent(filePath);
+    }
+}
+
+void DocumentWindow::toggleIncludesPathList()
+{
+    if (includeGroup->isVisible()) {
+        includeGroup->hide();
+        isIncludeGroupVisible = false;
+    }
+    else {
+        includeGroup->show();
+        isIncludeGroupVisible = true;
+    }
+}
+
+void DocumentWindow::toggleMacroList()
+{
+    if (macroGroup->isVisible()) {
+        macroGroup->hide();
+        isMacroGroupVisible = false;
+    }
+    else {
+        macroGroup->show();
+        isMacroGroupVisible = true;
     }
 }
 

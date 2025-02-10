@@ -137,27 +137,31 @@ void MainWindow::createMenus()
         Q_UNUSED(pos);
     });
     
-    QMenu *fileMenu = bar->addMenu(tr("File"));
+    QMenu *fileMenu = bar->addMenu(tr("FILE"));
     fileMenu->addAction(tr("New Document"), this, &MainWindow::onNewDocument, QKeySequence::New);
     fileMenu->addSeparator();
     fileMenu->addAction(tr("Open Workspace"), this, &MainWindow::onNewDocumentByOpenWorkspace);
     fileMenu->addSeparator();
     fileMenu->addAction(tr("Save Code"), this, &MainWindow::onSaveResult, QKeySequence::Save);
     fileMenu->addAction(tr("Save Workspace"), this, &MainWindow::onSaveWorkspace);
-    
-    QMenu *editMenu = bar->addMenu(tr("Edit"));
-    editMenu->addAction(tr("Undo"), this, [this](){ if (currentDocument) currentDocument->undo(); }, QKeySequence::Undo);
-    editMenu->addAction(tr("Redo"), this, [this](){ if (currentDocument) currentDocument->redo(); }, QKeySequence::Redo);
-    
-    QMenu *buildMenu = bar->addMenu(tr("Build"));
-    buildMenu->addAction(tr("Compile"), this, [this](){ if (currentDocument) currentDocument->compile();}, Qt::Key_F5);
 
-    QMenu *uiMenu = bar->addMenu(tr("UI"));
+    QMenu* uiMenu = bar->addMenu(tr("VIEW"));
+    uiMenu->addAction(tr("Includes List"), this, &MainWindow::onToggleCurrentDocumentIncludePaths);
+    uiMenu->addAction(tr("Macros List"), this, &MainWindow::onToggleCurrentDocumentMacros);
+
+    uiMenu->addSeparator();
     uiMenu->addAction(tr("Reset Layout"), this, &MainWindow::onResetLayout);
-    
+
     uiMenu->addSeparator();
     uiMenu->addAction(tr("Toggle Theme"), this, &MainWindow::onToggleTheme, QKeySequence(Qt::CTRL | Qt::Key_T));
     
+    QMenu *editMenu = bar->addMenu(tr("EDIT"));
+    editMenu->addAction(tr("Undo"), this, [this](){ if (currentDocument) currentDocument->undo(); }, QKeySequence::Undo);
+    editMenu->addAction(tr("Redo"), this, [this](){ if (currentDocument) currentDocument->redo(); }, QKeySequence::Redo);
+    
+    QMenu *buildMenu = bar->addMenu(tr("BUILD"));
+    buildMenu->addAction(tr("Compile"), this, [this](){ if (currentDocument) currentDocument->compile();}, Qt::Key_F5);
+
     // 设置菜单栏鼠标事件追踪
     bar->setMouseTracking(true);
 }
@@ -465,10 +469,10 @@ void MainWindow::onSaveWorkspace()
     if (tab) {
         // 获取tab的documentWindow
         DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab); // 将当前标签页转换为DocumentWindow类型
-        QString defaultFilePath = documentWindow->getDocumentWindowTitle() + ".ini"; // 生成默认工作区文件路径
-        defaultFilePath = defaultFilePath.toLower(); // 转换为小写
-
         if (documentWindow) {
+            QString defaultFilePath = documentWindow->getDocumentWindowTitle() + ".ini"; // 生成默认工作区文件路径
+            defaultFilePath = defaultFilePath.toLower(); // 转换为小写
+        
             QString fileName = QFileDialog::getSaveFileName(this, tr("Save Workspace"), defaultFilePath, tr("Setting Files (*.ini)")); // 打开保存工作区对话框
             if (!fileName.isEmpty()) { // 如果用户选择了文件名
                 documentWindow->saveSettings(fileName); // 保存文档窗口的设置
@@ -477,15 +481,34 @@ void MainWindow::onSaveWorkspace()
     }
 }
 
-void MainWindow::onShowDisassembly()
-{
-    QMessageBox::information(this, tr("Notice"), tr("Disassembly not implemented yet"));
-}
-
 void MainWindow::onResetLayout()
 {
     resize(1024, 768);
     // TODO: 重置其他布局设置
+}
+
+void MainWindow::onToggleCurrentDocumentIncludePaths()
+{
+    QWidget* tab = tabWidget->currentWidget(); // 获取当前选中的标签页
+    if (tab) {
+        // 获取tab的documentWindow
+        DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab);
+        if (documentWindow) {
+            documentWindow->toggleIncludesPathList();
+        }
+    }
+}
+
+void MainWindow::onToggleCurrentDocumentMacros()
+{
+    QWidget* tab = tabWidget->currentWidget(); // 获取当前选中的标签页
+    if (tab) {
+        // 获取tab的documentWindow
+        DocumentWindow* documentWindow = dynamic_cast<DocumentWindow*>(tab);
+        if (documentWindow) {
+            documentWindow->toggleMacroList();
+        }
+    }
 }
 
 void MainWindow::onToggleTheme()

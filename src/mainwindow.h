@@ -40,8 +40,9 @@ public slots:
     void onNewDocumentByOpenWorkspace();
     void onSaveResult();
     void onSaveWorkspace();
-    void onShowDisassembly();
     void onResetLayout();
+    void onToggleCurrentDocumentIncludePaths();
+    void onToggleCurrentDocumentMacros();
     void onToggleTheme();
     void onTabCloseRequested(int index);
     void onTabDoubleClicked(int index);

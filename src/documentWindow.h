@@ -33,6 +33,8 @@ public slots:
     void updateMacroListHeight();
     void updateCurrentCompilerSettings(const QString &compiler);
     void onBrowseFile();
+    void toggleIncludesPathList();
+    void toggleMacroList();
     void loadFileContent(const QString &filePath);
     void undo();
     void redo();
@@ -61,10 +63,14 @@ private:
     ShaderCodeTextEdit *inputEdit;
 
     QListWidget *includePathList; // 包含路径
+    QGroupBox* includeGroup;
+    bool isIncludeGroupVisible;
     QPushButton *addIncludeButton;
     QPushButton *removeIncludeButton;
 
     QListWidget *macroList; // 宏定义
+    QGroupBox* macroGroup;
+    bool isMacroGroupVisible;
     QPushButton *addMacroButton;
     QPushButton *removeMacroButton;
 
