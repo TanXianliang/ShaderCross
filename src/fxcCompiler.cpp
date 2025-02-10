@@ -25,7 +25,8 @@ void fxcCompiler::compile(const QString &shaderCode,
     out << shaderCode;  // 写入 Shader 代码
     tempFile.close();
 
-    QString command = buildCommand(tempFilePath, shaderModel, entryPoint, shaderType, includePaths, macros);
+    QString outputFilePath = QDir::temp().filePath("output_shader.dxbc");
+    QString command = buildCommand(tempFilePath, shaderModel, entryPoint, shaderType, includePaths, macros, outputFilePath);
     
     QProcess process;
     process.start(command);
@@ -35,19 +36,39 @@ void fxcCompiler::compile(const QString &shaderCode,
     QString error = process.readAllStandardError();
 
     // 判断编译是否成功
-    if (output.isEmpty()) {
+    if (!QFile::exists(outputFilePath)) {
         emit compilationError(error.isEmpty() ? "Compilation failed with no output." : error);
-    } else {
-        emit compilationFinished(output);
-        
-        // 如果 error 非空，将其输出为警告信息
-        if (!error.isEmpty()) {
-            emit compilationError(error);  // 直接发出错误信号
+    }
+    else {
+        QProcess process;
+
+        QString dxilDisasmCommand = QString("fxc.exe -dumpbin \"%1\"").arg(outputFilePath);
+        process.start(dxilDisasmCommand);
+
+        process.waitForFinished();
+        output = process.readAllStandardOutput();
+        QString errorDisasm = process.readAllStandardError();
+
+        if (output.isEmpty()) {
+            emit compilationError(errorDisasm.isEmpty() ? "Compilation failed with no output." : errorDisasm);
+        }
+        else {
+            emit compilationFinished(output);
+
+            // 如果 error 非空，将其输出为警告信息
+            if (!error.isEmpty()) {
+                emit compilationWarning(error);  // 直接发出错误信号
+            }
+
+            if (!errorDisasm.isEmpty()) {
+                emit compilationWarning(errorDisasm);
+            }
         }
     }
 
     // 删除临时文件
     QFile::remove(tempFilePath);
+    QFile::remove(outputFilePath);
 }
 
 QString fxcCompiler::buildCommand(const QString &inputFile, 
@@ -55,7 +76,8 @@ QString fxcCompiler::buildCommand(const QString &inputFile,
                                    const QString &entryPoint,
                                    const QString &shaderType,
                                    const QStringList &includePaths,
-                                   const QStringList &macros) 
+                                   const QStringList &macros,
+                                   const QString &outputFilePath)
 {
     // 检查着色器类型是否支持
     QStringList supportedTypes = {"Vertex", "Pixel", "Geometry", "Hull", "Domain", "Compute"};
@@ -85,7 +107,11 @@ QString fxcCompiler::buildCommand(const QString &inputFile,
     for (const QString &macro : macros) {
         command += QString(" /D %1").arg(macro);
     }
-    
+
+    if (!outputFilePath.isEmpty()) {
+        command += QString(" /Fo %1").arg(outputFilePath);
+    }
+
     // 添加输入文件
     command += QString(" \"%1\"").arg(inputFile);
     

@@ -33,7 +33,8 @@ private:
                         const QString &entryPoint,
                         const QString &shaderType,
                         const QStringList &includePaths,
-                        const QStringList &macros);
+                        const QStringList &macros,
+                        const QString &outputFilePath);
 };
 
 #endif // FXCCOMPILER_H
