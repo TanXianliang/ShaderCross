@@ -245,7 +245,7 @@ void DocumentWindow::setupUI()
     QHBoxLayout *logPanelLayout = new QHBoxLayout();
     logEdit = new QTextEdit(this);
     logEdit->setReadOnly(true);
-    logEdit->setMaximumHeight(30);
+    logEdit->setMaximumHeight(35);
     logEdit->setStyleSheet("QTextEdit { font-family: 'Consolas', monospace; }");
     logPanelLayout->addWidget(logEdit);
     outputLayout->addLayout(logPanelLayout);
