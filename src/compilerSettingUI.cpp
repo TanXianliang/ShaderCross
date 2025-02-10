@@ -125,13 +125,25 @@ void CompilerSettingUI::setOutputType(const QString &type)
 // 更新编译器设置
 void CompilerSettingUI::updateCompilerSettings(const QString &compiler)
 {
+    QString currentShaderType = shaderTypeCombo->currentText();
+
     shaderTypeCombo->clear();
     shaderModelCombo->clear();
     outputTypeCombo->clear();
 
     if (CompilerConfig::instance().hasCompiler(compiler)) {
         const auto& capability = CompilerConfig::instance().getCapability(compiler);
+        int currentIndex = 0;
+        for (auto& iter : capability.supportedShaderTypes)
+        {
+            if (iter.contains(currentShaderType))
+                break;
+
+            currentIndex++;
+        }
         shaderTypeCombo->addItems(capability.supportedShaderTypes);
+        shaderTypeCombo->setCurrentIndex(currentIndex);
+        
         shaderModelCombo->addItems(capability.supportedShaderModels);
         outputTypeCombo->addItems(capability.supportedOutputTypes);
     }
