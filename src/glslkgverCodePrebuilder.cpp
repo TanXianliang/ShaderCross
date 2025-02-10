@@ -1,5 +1,6 @@
 #include "glslkgverCodePrebuilder.h"
 #include <QRegularExpression>
+#include "spirvUtils.h"
 
 // 构造函数，初始化基础目录和包含路径
 GlslKgverCodePrebuilder::GlslKgverCodePrebuilder(const QStringList &includePaths) 

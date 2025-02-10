@@ -4,6 +4,7 @@
 #include <QFile>
 #include <QTextStream>
 #include <QDir>
+#include "spirvUtils.h"
 
 // 构造函数，初始化 glslangCompiler。
 glslangCompiler::glslangCompiler(QObject *parent) : QObject(parent) {}
@@ -74,6 +75,13 @@ void glslangCompiler::compile(const QString &shaderCode,
         if (output.isEmpty()) {
             emit compilationError(errorDisasm.isEmpty() ? "Compilation failed with no output." : errorDisasm);
         } else {
+            if (outputType == "SPIR-V") {
+                QString outputReflectionInfo;
+                if (DumpSpirVReflectionInfo(outputFilePath, outputReflectionInfo)) {
+                    output = output + "\n" + outputReflectionInfo;
+                }
+            }
+
             emit compilationFinished(output);
 
             // 如果 error 非空，将其输出为警告信息

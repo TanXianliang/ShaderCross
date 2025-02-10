@@ -64,6 +64,10 @@ add_executable(ShaderCross WIN32
     src/shaderCodeTextEdit.cpp
     src/documentWindow.h
     src/documentWindow.cpp
+    src/spirvUtils.h
+    src/spirvUtils.cpp
+    src/SPIRV-Reflect/spirv_reflect.h
+    src/SPIRV-Reflect/spirv_reflect.c
     ${QRC_SOURCES}
 )
 
