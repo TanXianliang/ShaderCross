@@ -137,12 +137,25 @@ QString GlslKgverCodePrebuilder::parseCodeSections(const CodeIncludeFile &includ
     int pushedNumLines = 0;
     int travelNumLines = 0;
     int travelLineOffset = 1;
+    int skipCount = 0;
 
     for (const QString &line : lines) {
 
         // 忽略以 @ 或 @@ 开头的行
-        if (line.startsWith("@") || line.startsWith("@@")) {
+        if (line.startsWith("@") || line.startsWith("@@") || line.startsWith("#SamplerState<") || line.startsWith("UNIFORM_BINDING")) {
             travelNumLines++;
+            continue; // 跳过该行
+        }
+
+        if (line.contains("uniform PerMTLUBO"))
+        {
+            skipCount = 3;
+        }
+
+        if (skipCount > 0)
+        {
+            travelNumLines++;
+            skipCount--;
             continue; // 跳过该行
         }
 
