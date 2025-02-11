@@ -78,10 +78,14 @@ void glslangkgverCompiler::compile(const QString &shaderCode,
         if (!output.isEmpty())
         {
             error = TransformGlslKgverCodeErrors(codePrebuilder, tempFilePath, output);
+
+            error = error + "\n" + codePrebuilder.getErrorLog();
             emit compilationError(error);
         }
         else
+        {
             emit compilationError(error.isEmpty() ? "Compilation failed with no output." : error);
+        }
     } else {
         QProcess process;
 

@@ -48,6 +48,7 @@ QString GlslKgverCodePrebuilder::parse(const QString &shaderCode, const QString 
     globalLineIter = 0;
     codeRecords.clear();
     content.clear();
+    error.clear();
 
     // 解析代码块
     initCodeSections(mainFile, shaderCode);
@@ -61,14 +62,17 @@ QString GlslKgverCodePrebuilder::parse(const QString &shaderCode, const QString 
 }
 
 // 处理 #include 指令
-QString GlslKgverCodePrebuilder::handleInclude(const CodeIncludeFile &currentFile, const QString &line, int depth) {
+QString GlslKgverCodePrebuilder::handleInclude(const CodeIncludeFile& currentFile, const QString& line, int depth) {
     if (depth > 100) {
-        qWarning() << "Include depth exceeded 100, aborting to prevent circular includes.";
+        QString log = "Include depth exceeded 100, aborting to prevent circular includes.";
+        errorLog(log);
         return ""; // 返回空字符串表示无法处理
     }
 
     QStringList parts = line.split(' ');
     if (parts.size() < 2) {
+        QString log = QString("invalid include in \"%1\"").arg(currentFile.filePath.isEmpty() ? "textEditor" : currentFile.filePath);
+        errorLog(log);
         return ""; // 无效的 include 指令
     }
 
@@ -81,10 +85,21 @@ QString GlslKgverCodePrebuilder::handleInclude(const CodeIncludeFile &currentFil
         QString cgincPath = "external/glslkgver/" + fileName;
 
         QString cgincContent = LoadCginc(cgincPath) + "\n";
+        if (cgincContent.isEmpty())
+        {
+            QString log = QString("open file \"%1\" failed.").arg(cgincPath);
+            errorLog(log);
+        }
         QStringList lines = cgincContent.split('\n');
 
         AddCodeRecords(lines.size(), 1, cgincPath, "");
         return cgincContent;
+    }
+
+    if (filePath == "declare_samplers")
+    {
+        AddCodeRecords(1, 1, filePath, "");
+        return "\n";
     }
 
     QString sectionName;
@@ -106,7 +121,8 @@ QString GlslKgverCodePrebuilder::handleInclude(const CodeIncludeFile &currentFil
     }
 
     if (includeFile.codeSections.isEmpty()) {
-        qWarning() << "Failed to parse include file:" << filePath;
+        QString log = QString("open file \"%1\"(section: %2) failed.").arg(filePath).arg(sectionName);
+        errorLog(log);
         return ""; // 返回空字符串表示无法处理
     } else {
         return parseCodeSections(includeFile, sectionName, depth + 1);
@@ -141,6 +157,13 @@ QString GlslKgverCodePrebuilder::parseCodeSections(const CodeIncludeFile &includ
             if (!includeContent.isEmpty()) {
                 processedLines.append(includeContent);
             } else{
+                QString log = QString(
+                    "error occurs in \"%1\"(section: %2, line: %3).")
+                    .arg(includeFile.filePath.isEmpty() ? "textEditor" : includeFile.filePath)
+                    .arg(startSection)
+                    .arg(travelNumLines + includeFile.codeSections[startSection].lineStart);
+
+                errorLog(log);
                 return "";
             }
         } else {
@@ -222,6 +245,11 @@ void GlslKgverCodePrebuilder::addToHead(const QString& headCode, const QString& 
 
     CodeRecord rec = { headFileName, sectionName, 1, numLines, 1 };
     codeRecords.insert(codeRecords.begin(), rec);
+}
+
+void GlslKgverCodePrebuilder::errorLog(const QString& errorLog)
+{
+    error.append(errorLog + "\n");
 }
 
 bool GlslKgverCodePrebuilder::matchGlobalLine(int globalLineNum, CodeFileLineInfo &retInfo)

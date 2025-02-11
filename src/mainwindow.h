@@ -57,9 +57,9 @@ private:
     DocumentWindow* getCurrentDocumentWindow();
 
     // 主界面UI组件
-    QToolButton *closeButton;
-    QToolButton *minButton;
-    QToolButton *maxButton;  // 添加最大化按钮
+    QToolButton *closeButton = nullptr;
+    QToolButton *minButton = nullptr;
+    QToolButton *maxButton = nullptr;  // 添加最大化按钮
     void updateButtonPositions();  // 添加新方法
 
     QPoint mouseQPoint;

@@ -40,6 +40,8 @@ public:
     };
     bool matchGlobalLine(int globalLineNum, CodeFileLineInfo& retInfo);
 
+    QString getErrorLog() const { return error; }
+
 private:
     // 初始化包含代码文件
     void initCodeSections(CodeIncludeFile &includeFile, const QString &shaderCode);
@@ -59,8 +61,11 @@ private:
     // headCode添加到代码前端
     void addToHead(const QString& headCode, const QString& headFileName, const QString& sectionName);
 
+    void errorLog(const QString& errorLog);
+
 private:
     QString content;
+    QString error;
     QStringList includePaths; // 包含路径
     CodeIncludeFile mainFile; // 当前包含起始文件
     QMap<QString, CodeIncludeFile> includedFiles; // 包含的文件集合
