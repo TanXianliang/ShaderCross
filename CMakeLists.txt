@@ -12,17 +12,22 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_GENERATOR "Visual Studio 17 2022" CACHE INTERNAL "" FORCE)
 set(CMAKE_GENERATOR_PLATFORM x64 CACHE INTERNAL "" FORCE)
 
-# 设置Qt路径 - 使用Qt 5.12.5
-set(Qt5_DIR "C:/Qt/Qt5.12.5/5.12.5/msvc2017_64/lib/cmake/Qt5")
 set(CMAKE_PREFIX_PATH "C:/Qt/Qt5.12.5/5.12.5/msvc2017_64")
+
+# 设置Qt路径 - 使用Qt 5.12.5
+# 添加Qt的运行时DLL路径
+set(QT_INSTALL_PATH "C:/Qt/Qt5.12.5/5.12.5/msvc2017_64")
+set(Qt5_DIR "${QT_INSTALL_PATH}/lib/cmake/Qt5")
+set(QT_BIN_PATH "${QT_INSTALL_PATH}/bin")
+set(QT_PLUGIN_PATH "${QT_INSTALL_PATH}/plugins")
 
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
 # 添加Qt的include路径
 include_directories(
     ${Qt5Widgets_INCLUDE_DIRS}
-    "C:/Qt/Qt5.12.5/5.12.5/msvc2017_64/include"
-    "C:/Qt/Qt5.12.5/5.12.5/msvc2017_64/include/QtWidgets"
+    "${QT_INSTALL_PATH}/include"
+    "${QT_INSTALL_PATH}/include/QtWidgets"
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/external/fxc
 )
@@ -81,11 +86,6 @@ set_target_properties(ShaderCross PROPERTIES
 target_link_libraries(ShaderCross PRIVATE
     Qt5::Widgets
 )
-
-# 添加Qt的运行时DLL路径
-set(QT_INSTALL_PATH "C:/Qt/Qt5.12.5/5.12.5/msvc2017_64")
-set(QT_BIN_PATH "${QT_INSTALL_PATH}/bin")
-set(QT_PLUGIN_PATH "${QT_INSTALL_PATH}/plugins")
 
 # 复制Qt运行时DLL到输出目录
 add_custom_command(TARGET ShaderCross POST_BUILD
