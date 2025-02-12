@@ -108,6 +108,20 @@ add_custom_command(TARGET ShaderCross POST_BUILD
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glslang/glslangValidator.exe
         ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv-cross/spirv-cross.exe
         ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv-cross/spirv-dis.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv/spirv-as.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv/spirv-cfg.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv/spirv-dis.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv/spirv-link.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv/spirv-lint.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv/spirv-objdump.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv/spirv-opt.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv/spirv-reduce.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv/spirv-reflect.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv/spirv-reflect-pp.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv/spirv-remap.exe
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv/SPIRV-Tools-shared.dll
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv/SPIRV-Tools-sharedd.dll
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spirv/spirv-val.exe
         $<TARGET_FILE_DIR:ShaderCross>
 )
 
