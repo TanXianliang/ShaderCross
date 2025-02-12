@@ -53,6 +53,11 @@ void glslangCompiler::compile(const QString &shaderCode,
     } else {
         QProcess process;
 
+        // 优化spirv
+        QString spirvOptCommand = QString("spirv-opt -O \"%1\" -o \"%1\"").arg(outputFilePath);
+        process.start(spirvOptCommand);
+        process.waitForFinished();
+
         if (outputType == "SPIR-V"){
             // 使用spirv-dis反编译SPIR-V
             QString spirvDisCommand = QString("spirv-dis.exe \"%1\"").arg(outputFilePath);
@@ -138,7 +143,8 @@ QString glslangCompiler::buildCommand(const QString &tempFilePath,
     }
 
     // 自动绑定uniform变量
-    command += " --amb";
+    command += " --auto-map-bindings";
+    command += " --auto-map-locations";
     
     // 指定输出文件
     command += QString(" -V -o \"%1\"").arg(outputFilePath);
