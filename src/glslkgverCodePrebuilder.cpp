@@ -99,7 +99,7 @@ QString GlslKgverCodePrebuilder::handleInclude(const CodeIncludeFile& currentFil
     if (filePath == "declare_samplers")
     {
         AddCodeRecords(1, 1, filePath, "");
-        return "\n";
+        return " ";
     }
 
     QString sectionName;
