@@ -321,6 +321,7 @@ void DocumentWindow::setupConnections()
     connect(languageCombo, &QComboBox::currentTextChanged, this, [this](const QString &language) {
         // 更新编译器设置
         compilerSettingUI->onLanguageChanged(language);
+        inputEdit->setShaderLanguage(language);
 
         // 保存当前编译器选择
         QString currentCompiler = compilerSettingUI->getCurrentCompiler();
@@ -610,6 +611,7 @@ void DocumentWindow::loadSettings(QString settingsPath)
     QString language = settings.value("language", "HLSL").toString();
     languageCombo->setCurrentText(language);
     compilerSettingUI->onLanguageChanged(language);  // 更新编译器设置
+    inputEdit->setShaderLanguage(language);
 
     // 恢复编译器设置
     QString compiler = settings.value("compiler").toString();

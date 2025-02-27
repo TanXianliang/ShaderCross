@@ -3,8 +3,22 @@
 QStringList GetKeyWords(const QString &language)
 {
     if (language == "HLSL") {
-        // 这里可以添加 HLSL 特有的关键字
-        return QStringList() << 
+        QStringList hlslBuiltInVariables = QStringList() <<
+
+        // 顶点着色器（Vertex Shader）中的内置变量
+        "SV_VertexID" << "SV_InstanceID" << "SV_Position" <<
+
+        // 片段着色器（Pixel Shader）中的内置变量
+        "SV_Position" << "SV_IsFrontFace" << "SV_SampleIndex" << "SV_Coverage" << "SV_Targe" << "SV_Coverage" << 
+        "SV_Target0" << "SV_Target1" << "SV_Target2" << "SV_Target3" << "SV_Target4" << "SV_Target5" << "SV_Target6" << "SV_Target7" << "SV_Target8" <<
+
+        // 几何着色器（Geometry Shader）中的内置变量
+        "SV_PrimitiveID" << "SV_GSInstanceID" <<
+
+        // 计算着色器（Compute Shader）中的内置变量
+        "SV_DispatchThreadID" << "SV_GroupID" << "SV_GroupIndex" << "SV_GroupThreadID";
+
+        return QStringList() << hlslBuiltInVariables <<
             "bool" << "int" << "uint" << "float" << "half" << "double" <<
             "bool1" << "bool2" << "bool3" << "bool4" <<
             "int1" << "int2" << "int3" << "int4" <<
@@ -12,19 +26,19 @@ QStringList GetKeyWords(const QString &language)
             "float1" << "float2" << "float3" << "float4" <<
             "half1" << "half2" << "half3" << "half4" <<
             "double1" << "double2" << "double3" << "double4" <<
-            "float2x2" << "float2x3" << "float2x4" << 
-            "float3x2" << "float3x3" << "float3x4" << 
+            "float2x2" << "float2x3" << "float2x4" <<
+            "float3x2" << "float3x3" << "float3x4" <<
             "float4x2" << "float4x3" << "float4x4" <<
-            "string" << 
+            "string" <<
             "SamplerState" << "Texture1D" << "Texture1DArray" <<
             "Texture2D" << "Texture2DArray" << "Texture3D" << "TextureCube" <<
             "TextureCubeArray" << "RWTexture1D" << "RWTexture1DArray" <<
             "RWTexture2D" << "RWTexture2DArray" << "RWTexture3D" <<
             "StructuredBuffer" << "RWStructuredBuffer" << "ByteAddressBuffer" <<
-            "RWByteAddressBuffer" << "Buffer" << "RWBuffer" << 
+            "RWByteAddressBuffer" << "Buffer" << "RWBuffer" << "cbuffer" <<
 
             // 结构体
-            "struct" <<
+            "struct" << "packoffset" <<
 
             // 控制流
             "if" << "else" << "for" << "while" << "do" << "switch" << "case" << "default" <<
@@ -40,15 +54,33 @@ QStringList GetKeyWords(const QString &language)
 
             // 语义
             "in" << "out" << "inout" << "uniform" << "varying" << "attribute" << "const" <<
-            "static" << "groupshared" << "register" << "location" << "binding" << "numthreads" <<
+            "static" << "groupshared" << "register" << "location" << "binding" << "numthreads" << "row_major" << "col_major" << "void"
 
             // 其他
             "StructuredBuffer" << "RWStructuredBuffer" <<
             "ByteAddressBuffer" << "RWByteAddressBuffer" << "Buffer" << "RWBuffer";
 
     } else {
+        QStringList glslBuiltInVariables = QStringList() <<
+        // 顶点着色器（Vertex Shader）中的内置变量
+        "gl_VertexID" << "gl_VertexIndex" << "gl_InstanceID" << "gl_DrawID" << "gl_Position" << "gl_PointSize" << "gl_ClipDistance" <<
+
+        // 片段着色器（Fragment Shader）中的内置变量
+        "gl_FragCoord" << "gl_FrontFacing" << "gl_PointCoord" << "gl_SampleID" << "gl_SamplePosition" << "gl_SampleMaskIn" << "gl_FragDepth" << 
+        "gl_FragColor" << // 已废弃
+        "gl_SampleMask" <<
+
+        // 几何着色器（Geometry Shader）中的内置变量
+        "gl_PrimitiveIDIn" << "gl_InvocationID" << "gl_PrimitiveID" << "gl_Layer" << "gl_ViewportIndex" <<
+
+        // 计算着色器（Compute Shader）中的内置变量
+        "gl_NumWorkGroups" << "gl_WorkGroupID" << "gl_LocalInvocationID" << "gl_GlobalInvocationID" << "gl_LocalInvocationIndex" << 
+
+        // 其他通用内置变量
+        "gl_Position" << "gl_FragCoord" <<  "gl_PointSize" << "gl_FragDepth"; 
+
         // 默认使用 GLSL 关键字
-        return QStringList() << 
+        return QStringList() << glslBuiltInVariables <<
             "void" << "bool" << "int" << "uint" << "float" << "double" <<
             "vec2" << "vec3" << "vec4" <<
             "bvec2" << "bvec3" << "bvec4" <<
@@ -102,8 +134,8 @@ ShaderCodeHighlighter::ShaderCodeHighlighter(QTextDocument *parent)
 
 void ShaderCodeHighlighter::highlightBlock(const QString &text) {
     highlightKeyword(text);
-    highlightComment(text);
     highlightString(text);
+    highlightComment(text);
 }
 
 void ShaderCodeHighlighter::highlightKeyword(const QString &text) {
@@ -138,7 +170,7 @@ void ShaderCodeHighlighter::highlightString(const QString &text) {
 ShaderCodeTextEdit::ShaderCodeTextEdit(QWidget *parent)
     : QPlainTextEdit(parent), highlighter(new ShaderCodeHighlighter(document())) {
     // 设置默认的着色器语言
-    setShaderLanguage("GLSL");
+    setShaderLanguage("HLSL");
 
     // 创建一个 QFont 对象并设置字体大小
     QFont fontInstance = font(); // 获取当前字体
