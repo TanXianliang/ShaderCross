@@ -10,7 +10,7 @@ ShaderCross 是一个跨平台的着色器编译和转换工具，支持 HLSL �
   - **SPIRV-Cross**：用于着色器代码转换，支持多种格式。
 
 - **多格式支持**
-  - 输入：HLSL, GLSL
+  - 输入：HLSL, HLSL2021, GLSL
   - 输出：DXIL, DXBC, SPIR-V, HLSL, GLSL
 
 - **现代化界面**
@@ -30,18 +30,17 @@ ShaderCross 是一个跨平台的着色器编译和转换工具，支持 HLSL �
 
 - **输出格式**
   - 根据编译器自动更新可用选项
-  - DXC：DXIL, SPIR-V
+  - DXC：DXIL, SPIR-V, GLSL
   - FXC：DXBC
-  - GLSLANG：SPIR-V
-  - SPIRV-CROSS：HLSL, GLSL
+  - GLSLANG：SPIR-V, HLSL, GLSL
 
 ## 界面设计
 ### 左侧面板（输入区）
 - **着色器语言选择**
-  - 支持 HLSL 和 GLSL，根据语言自动调整可用的编译器选项。
+  - 支持 HLSL, HLSL2021 和 GLSL，根据语言自动调整可用的编译器选项。
   
 - **源代码编辑器**
-  - 支持多种文本编码，自动语法高亮（计划中），实时错误提示（计划中）。
+  - 支持多种文本编码，自动语法高亮。
 
 - **资源管理**
   - 包含路径列表：管理头文件搜索路径。
