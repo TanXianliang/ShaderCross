@@ -325,7 +325,7 @@ void DocumentWindow::setupConnections()
 
         // 保存当前编译器选择
         QString currentCompiler = compilerSettingUI->getCurrentCompiler();
-        if (language == "HLSL") {
+        if (language == "HLSL" || language == "HLSL2021") {
             lastGLSLCompiler = currentCompiler;
         } else {
             lastHLSLCompiler = currentCompiler;
@@ -408,7 +408,7 @@ void DocumentWindow::compile()
             outputEdit->append(tr("Compilation warning:\n") + warning);
         });
 
-        dxcCompilerInstance->compile(inputEdit->toPlainText(), shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
+        dxcCompilerInstance->compile(inputEdit->toPlainText(), languageCombo->currentText(), shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
     } else if (compiler == "GLSLANG") {
         glslangCompiler *glslangCompilerInstance = new glslangCompiler(this);
         

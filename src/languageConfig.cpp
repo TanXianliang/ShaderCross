@@ -38,6 +38,10 @@ LanguageConfig::LanguageConfig() {
     hlsl.supportedCompilers = QStringList() << "FXC" << "DXC" << "GLSLANG";
     languageCapabilities["HLSL"] = hlsl;
 
+    LanguageCapability hlsl2021;
+    hlsl.supportedCompilers = QStringList() << "DXC";
+    languageCapabilities["HLSL2021"] = hlsl;
+
     // GLSL 语言配置
     LanguageCapability glsl;
     glsl.supportedCompilers = QStringList() << "GLSLANG";

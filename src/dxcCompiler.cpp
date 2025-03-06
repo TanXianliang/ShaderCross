@@ -11,6 +11,7 @@ dxcCompiler::dxcCompiler(QObject *parent) : QObject(parent) {}
 
 // 编译方法，执行编译操作。
 void dxcCompiler::compile(const QString &shaderCode, 
+                          const QString &languageType,
                           const QString &shaderModel, 
                           const QString &entryPoint,
                           const QString &shaderType,
@@ -36,8 +37,13 @@ void dxcCompiler::compile(const QString &shaderCode,
         outputFilePath = QDir::temp().filePath("output_shader.spv");
     }
 
+    bool bHLSL2021 = false;
+    if (languageType == "HLSL2021") {
+        bHLSL2021 = true;
+    }
+
     QFile::remove(outputFilePath);
-    QString command = buildCommand(tempFilePath, shaderModel, entryPoint, shaderType, outputType, includePaths, macros, outputFilePath);
+    QString command = buildCommand(tempFilePath, shaderModel, entryPoint, shaderType, outputType, includePaths, macros, outputFilePath, bHLSL2021);
 
     QProcess process;
     process.start(command);
@@ -104,7 +110,8 @@ QString dxcCompiler::buildCommand(const QString &tempFilePath,
                                    const QString &outputType,
                                    const QStringList &includePaths,
                                    const QStringList &macros,
-                                   const QString &outputFilePath) 
+                                   const QString &outputFilePath,
+                                   bool bHLSL2021) 
 {
     // 基础命令
     QString command = "dxc.exe";
@@ -139,7 +146,10 @@ QString dxcCompiler::buildCommand(const QString &tempFilePath,
         command += " -spirv";
     }
 
-    command += " -HV 2016";
+    if (!bHLSL2021)
+    {
+        command += " -HV 2016";
+    }
     
     // 添加包含路径
     for (const QString &path : includePaths) {

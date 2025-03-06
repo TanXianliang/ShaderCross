@@ -15,6 +15,7 @@ public:
     
     // 修改编译方法，接受 Shader 代码字符串
     void compile(const QString &shaderCode, 
+                 const QString &languageType,
                  const QString &shaderModel, 
                  const QString &entryPoint,
                  const QString &shaderType,
@@ -41,7 +42,8 @@ private:
                          const QString &outputType,
                          const QStringList &includePaths,
                          const QStringList &macros,
-                         const QString &outputFilePath);
+                         const QString &outputFilePath,
+                         bool isHLSL2021);
 };
 
 #endif // DXCCOMPILER_H
