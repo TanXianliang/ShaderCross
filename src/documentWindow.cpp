@@ -384,6 +384,7 @@ void DocumentWindow::compile()
         });
 
         fxcCompilerInstance->compile(inputEdit->toPlainText(), shaderModel, entryPoint, shaderType, includePaths, macros);
+        fxcCompilerInstance->deleteLater();
     } else if (compiler == "DXC") {
         dxcCompiler *dxcCompilerInstance = new dxcCompiler(this);
         
@@ -409,6 +410,7 @@ void DocumentWindow::compile()
         });
 
         dxcCompilerInstance->compile(inputEdit->toPlainText(), languageCombo->currentText(), shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
+        dxcCompilerInstance->deleteLater();
     } else if (compiler == "GLSLANG") {
         glslangCompiler *glslangCompilerInstance = new glslangCompiler(this);
         
@@ -434,6 +436,7 @@ void DocumentWindow::compile()
         });
 
         glslangCompilerInstance->compile(inputEdit->toPlainText(), languageCombo->currentText(), shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
+        glslangCompilerInstance->deleteLater();
     } else if (compiler == "GLSLANGKGVER") {
         glslangkgverCompiler *glslangkgverCompilerInstance = new glslangkgverCompiler(this);
         
@@ -459,6 +462,7 @@ void DocumentWindow::compile()
         });
 
         glslangkgverCompilerInstance->compile(inputEdit->toPlainText(), shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
+        glslangkgverCompilerInstance->deleteLater();
     }
 }
 
