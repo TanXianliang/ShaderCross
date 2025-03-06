@@ -152,9 +152,29 @@ void CompilerSettingUI::updateCompilerSettings(const QString &compiler)
 // 响应语言变化
 void CompilerSettingUI::onLanguageChanged(const QString &language)
 {
-    compilerCombo->clear();
     if (LanguageConfig::instance().hasLanguage(language)) {
         QStringList compilers = LanguageConfig::instance().getSupportedCompilers(language);
+
+        QString currentShaderType = shaderTypeCombo->currentText();
+        QString currentCompiler = compilerCombo->currentText();
+
+        compilerCombo->clear();
         compilerCombo->addItems(compilers);
+
+        if (compilers.contains(currentCompiler))
+            compilerCombo->setCurrentText(currentCompiler);
+        else
+            compilerCombo->setCurrentIndex(0);
+
+        currentCompiler = compilerCombo->currentText();
+
+        if (CompilerConfig::instance().hasCompiler(currentCompiler)) {
+            const auto& capability = CompilerConfig::instance().getCapability(currentCompiler);
+
+            if (capability.supportedShaderTypes.contains(currentShaderType))
+                shaderTypeCombo->setCurrentText(currentShaderType);
+            else
+                shaderTypeCombo->setCurrentIndex(0);
+        }
     }
 }
