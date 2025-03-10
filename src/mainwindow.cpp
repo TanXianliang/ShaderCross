@@ -138,7 +138,7 @@ void MainWindow::createMenus()
     fileMenu->addAction(tr("Open Shader File"), this, &MainWindow::openShaderFile, QKeySequence(Qt::CTRL | Qt::Key_O)); // 打开着色器文件动作
 
     fileMenu->addSeparator();
-    fileMenu->addAction(tr("Save Code"), this, &MainWindow::onSaveResult, QKeySequence::Save);
+    fileMenu->addAction(tr("Save Shader File"), this, &MainWindow::onSaveShaderFile, QKeySequence::Save);
     fileMenu->addAction(tr("Save Workspace"), this, &MainWindow::onSaveWorkspace);
 
     QMenu* uiMenu = bar->addMenu(tr("VIEW"));
@@ -427,38 +427,65 @@ void MainWindow::openShaderFile()
     }
 }
 
-void MainWindow::onSaveResult()
+void MainWindow::onSaveShaderFile()
 {
     DocumentWindow* documentWindow = getCurrentDocumentWindow(); 
     if (documentWindow) {
-        QString title = documentWindow->getDocumentWindowTitle(); // 获取文档标题
-        QString language = documentWindow->getLanguage(); // 获取文档语言
+        if (documentWindow->getFilePath().isEmpty()) {
+            // 如果文档没有保存过，弹出保存对话框
+            QString title = documentWindow->getDocumentWindowTitle(); // 获取文档标题
+            QString language = documentWindow->getLanguage(); // 获取文档语言
 
-        QString defaultFilePath = title + "." + language; // 生成默认文件路径
-        defaultFilePath = defaultFilePath.toLower(); // 转换为小写
+            QString defaultFilePath = title + "." + language; // 生成默认文件路径
+            defaultFilePath = defaultFilePath.toLower(); // 转换为小写
 
-        QString fileName = QFileDialog::getSaveFileName(this, tr("Save Code"), defaultFilePath, tr("All Files (*.*)")); // 打开保存文件对话框
-        if (!fileName.isEmpty()) { // 如果用户选择了文件名
+            QString fileName = QFileDialog::getSaveFileName(this, tr("Save Code"), defaultFilePath, tr("All Files (*.*)")); // 打开保存文件对话框
+            if (!fileName.isEmpty()) { // 如果用户选择了文件名
+                auto content = documentWindow->getContent(); // 获取文档内容
+                QFile file(fileName); // 创建文件对象
+                if (file.open(QIODevice::WriteOnly | QIODevice::Text)) { // 尝试打开文件进行写入
+                    QTextStream out(&file); // 创建文本流
+
+                    // 根据文档编码设置文本流编码
+                    if (!documentWindow->getEncoding().isEmpty()) {
+                        if (documentWindow->getEncoding() == "UTF-8-BOM") {
+                            out.setCodec("UTF-8"); // 设置编码为 UTF-8
+                            out << QChar(0xFEFF);  // 手动写入 UTF-8 BOM（可选）
+                        } else {
+                            out.setCodec(documentWindow->getEncoding().toStdString().c_str());
+                        }
+                    }
+
+                    out << content; // 将内容写入文件
+                    file.close(); // 关闭文件
+
+                    documentWindow->setFilePath(fileName); // 更新文档文件路径
+                }
+                else {
+                    QMessageBox::warning(this, QString("Warnings"), QString("Saving file failed.")); // 显示保存失败的警告
+                }
+            }
+        }
+        else {
+            // 如果文档已经保存过，直接保存
             auto content = documentWindow->getContent(); // 获取文档内容
-            QFile file(fileName); // 创建文件对象
+            QFile file(documentWindow->getFilePath()); // 创建文件对象
             if (file.open(QIODevice::WriteOnly | QIODevice::Text)) { // 尝试打开文件进行写入
                 QTextStream out(&file); // 创建文本流
 
                 // 根据文档编码设置文本流编码
-                if (documentWindow->getEncoding() == "UTF-8") {
-                    out.setCodec("UTF-8");
-                }
-                else if (documentWindow->getEncoding() == "GB2312") {
-                    out.setCodec("GB2312");
-                }
-                else if (documentWindow->getEncoding() == "GBK") {
-                    out.setCodec("GBK");
+                if (!documentWindow->getEncoding().isEmpty()) {
+                    if (documentWindow->getEncoding() == "UTF-8-BOM") {
+                        out.setCodec("UTF-8"); // 设置编码为 UTF-8
+                        out << QChar(0xFEFF);  // 手动写入 UTF-8 BOM（可选）
+                    } else {
+                        out.setCodec(documentWindow->getEncoding().toStdString().c_str());
+                    }
                 }
 
                 out << content; // 将内容写入文件
                 file.close(); // 关闭文件
-            }
-            else {
+            } else {
                 QMessageBox::warning(this, QString("Warnings"), QString("Saving file failed.")); // 显示保存失败的警告
             }
         }

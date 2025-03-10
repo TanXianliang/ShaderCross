@@ -38,6 +38,8 @@ public slots:
     void loadFileContent(const QString &filePath);
     void undo();
     void redo();
+    QString getFilePath() { return filePathEdit->text(); }
+    void setFilePath(const QString &filePath) { filePathEdit->setText(filePath); }
     QString getContent();
     QString getEncoding();
     QString getLanguage();
@@ -57,7 +59,6 @@ private:
 
     // ShaderCode输入界面
     QLineEdit *filePathEdit;
-    QPushButton *browseButton;
     QComboBox *languageCombo;
     QComboBox *encodingCombo;
     ShaderCodeTextEdit *inputEdit;

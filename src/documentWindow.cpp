@@ -63,11 +63,7 @@ DocumentWindow::~DocumentWindow()
     if (filePathEdit) {
         delete filePathEdit;
         filePathEdit = nullptr;
-    }
-    if (browseButton) {
-        delete browseButton;
-        browseButton = nullptr;
-    }   
+    }  
     if (languageCombo) {
         delete languageCombo;
         languageCombo = nullptr;
@@ -148,11 +144,8 @@ void DocumentWindow::setupUI()
     // File selection
     QHBoxLayout *fileLayout = new QHBoxLayout();
     filePathEdit = new QLineEdit(this);
-    browseButton = new QPushButton(QIcon(), tr("Browse"), this);
-    browseButton->setObjectName("browseButton");  // 添加对象名
     fileLayout->addWidget(new QLabel(tr("Shader Path:")));
     fileLayout->addWidget(filePathEdit);
-    fileLayout->addWidget(browseButton);
     inputLayout->addLayout(fileLayout);
     
     // Language selection
@@ -169,7 +162,7 @@ void DocumentWindow::setupUI()
     QHBoxLayout *encodingLayout = new QHBoxLayout();
     encodingLayout->addWidget(new QLabel(tr("Encoding:")));
     encodingCombo = new QComboBox(this);
-    encodingCombo->addItems(QStringList() << "UTF-8" << "GB18030" << "UTF-16" << "System");
+    encodingCombo->addItems(QStringList() << "UTF-8" << "UTF-8-BOM" << "GB18030" << "GBK");
     encodingCombo->setCurrentText("UTF-8");
     encodingLayout->addWidget(encodingCombo);
     inputLayout->addLayout(encodingLayout);
@@ -622,6 +615,12 @@ void DocumentWindow::loadSettings(QString settingsPath)
     compilerSettingUI->onLanguageChanged(language);  // 更新编译器设置
     inputEdit->setShaderLanguage(language);
 
+    // 恢复文件路径
+    QString filePath = settings.value("filePath", "").toString();
+    if (!filePath.isEmpty()) {
+        filePathEdit->setText(filePath);
+    }
+
     // 恢复编译器设置
     QString compiler = settings.value("compiler").toString();
     if (!compiler.isEmpty()) {
@@ -685,6 +684,9 @@ void DocumentWindow::saveSettings(QString settingsPath)
     
     // 保存语言设置
     settings.setValue("language", languageCombo->currentText());
+
+    // 保存文件路径
+    settings.setValue("filePath", getFilePath());
     
     // 保存编译器设置
     settings.setValue("compiler", compilerSettingUI->getCurrentCompiler());
