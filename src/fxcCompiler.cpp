@@ -7,12 +7,14 @@
 
 fxcCompiler::fxcCompiler(QObject *parent) : QObject(parent) {}
 
-void fxcCompiler::compile(const QString &shaderCode, 
-                          const QString &shaderModel, 
-                          const QString &entryPoint,
-                          const QString &shaderType,
-                          const QStringList &includePaths,
-                          const QStringList &macros) 
+void fxcCompiler::compile(
+                        const QString &shaderCode, 
+                        const QString &shaderModel, 
+                        const QString &entryPoint, 
+                        const QString &shaderType,
+                        const QStringList &includePaths, 
+                        const QStringList &macros,
+                        const QString &additionOptions) 
 {
     // 使用临时文件来存储 Shader 代码
     QString tempFilePath = QDir::temp().filePath("temp_shader.hlsl");
@@ -26,7 +28,7 @@ void fxcCompiler::compile(const QString &shaderCode,
     tempFile.close();
 
     QString outputFilePath = QDir::temp().filePath("output_shader.dxbc");
-    QString command = buildCommand(tempFilePath, shaderModel, entryPoint, shaderType, includePaths, macros, outputFilePath);
+    QString command = buildCommand(tempFilePath, shaderModel, entryPoint, shaderType, includePaths, macros, outputFilePath, additionOptions);
     
     QProcess process;
     process.start(command);
@@ -77,7 +79,8 @@ QString fxcCompiler::buildCommand(const QString &inputFile,
                                    const QString &shaderType,
                                    const QStringList &includePaths,
                                    const QStringList &macros,
-                                   const QString &outputFilePath)
+                                   const QString &outputFilePath,
+                                   const QString &additionOptions)
 {
     // 检查着色器类型是否支持
     QStringList supportedTypes = {"Vertex", "Pixel", "Geometry", "Hull", "Domain", "Compute"};
@@ -94,6 +97,11 @@ QString fxcCompiler::buildCommand(const QString &inputFile,
     model.replace(".", "_");
     QString profile = QString(shaderType.toLower().at(0)) + QString("s_%1").arg(model);
     command += QString(" /T %1").arg(profile);
+
+    // 添加附加选项
+    if (!additionOptions.isEmpty()) {
+        command += QString(" %1").arg(additionOptions);
+    }
     
     // 添加入口点
     command += QString(" /E %1").arg(entryPoint);

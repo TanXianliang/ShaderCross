@@ -59,7 +59,7 @@ DocumentWindow::~DocumentWindow()
         QFile::remove(settingsPath);
     }
 
-    // 销毁所有UI控件
+    // 销毁所有UI控件   
     if (filePathEdit) {
         delete filePathEdit;
         filePathEdit = nullptr;
@@ -144,6 +144,16 @@ void DocumentWindow::setupUI()
     QGroupBox *inputGroup = new QGroupBox(tr("Shader Input"), this);
     QVBoxLayout *inputLayout = new QVBoxLayout(inputGroup);
     inputLayout->setSpacing(8);
+
+    // File selection
+    QHBoxLayout *fileLayout = new QHBoxLayout();
+    filePathEdit = new QLineEdit(this);
+    browseButton = new QPushButton(QIcon(), tr("Browse"), this);
+    browseButton->setObjectName("browseButton");  // 添加对象名
+    fileLayout->addWidget(new QLabel(tr("Shader Path:")));
+    fileLayout->addWidget(filePathEdit);
+    fileLayout->addWidget(browseButton);
+    inputLayout->addLayout(fileLayout);
     
     // Language selection
     QHBoxLayout *langLayout = new QHBoxLayout();
@@ -154,16 +164,6 @@ void DocumentWindow::setupUI()
     langLayout->addWidget(new QLabel(tr("Shader Language:")));
     langLayout->addWidget(languageCombo);
     inputLayout->addLayout(langLayout);
-    
-    // File selection
-    QHBoxLayout *fileLayout = new QHBoxLayout();
-    filePathEdit = new QLineEdit(this);
-    browseButton = new QPushButton(QIcon(), tr("Browse"), this);
-    browseButton->setObjectName("browseButton");  // 添加对象名
-    fileLayout->addWidget(new QLabel(tr("Shader Path:")));
-    fileLayout->addWidget(filePathEdit);
-    fileLayout->addWidget(browseButton);
-    inputLayout->addLayout(fileLayout);
 
     // 添加编码选择
     QHBoxLayout *encodingLayout = new QHBoxLayout();
@@ -278,7 +278,6 @@ void DocumentWindow::setupConnections()
             this, &DocumentWindow::updateCurrentCompilerSettings);
 
     // 文件浏览按钮连接
-    connect(browseButton, &QPushButton::clicked, this, &DocumentWindow::onBrowseFile);
     connect(encodingCombo, &QComboBox::currentTextChanged, [this]() {
             QString encoding = encodingCombo->currentText();
             QString shaderCode = inputEdit->toPlainText();
@@ -344,6 +343,12 @@ void DocumentWindow::compile()
     QString entryPoint = compilerSettingUI->getEntryPoint();
     QString outputType = compilerSettingUI->getOutputType();
 
+    // 获取额外编译选项
+    QString additionOptions = "";
+    if (compilerSettingUI->isExtraOptionsEnabled()) {
+        additionOptions = compilerSettingUI->getExtraOptions();
+    }
+
     // 获取包含路径和宏定义
     QStringList includePaths;
     for (int i = 0; i < includePathList->count(); ++i) {
@@ -383,7 +388,7 @@ void DocumentWindow::compile()
             outputEdit->append(tr("Compilation warning:\n") + warning);
         });
 
-        fxcCompilerInstance->compile(inputEdit->toPlainText(), shaderModel, entryPoint, shaderType, includePaths, macros);
+        fxcCompilerInstance->compile(inputEdit->toPlainText(), shaderModel, entryPoint, shaderType, includePaths, macros, additionOptions);
         fxcCompilerInstance->deleteLater();
     } else if (compiler == "DXC") {
         dxcCompiler *dxcCompilerInstance = new dxcCompiler(this);
@@ -409,7 +414,7 @@ void DocumentWindow::compile()
             outputEdit->append(tr("Compilation warning:\n") + warning);
         });
 
-        dxcCompilerInstance->compile(inputEdit->toPlainText(), languageCombo->currentText(), shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
+        dxcCompilerInstance->compile(inputEdit->toPlainText(), languageCombo->currentText(), shaderModel, entryPoint, shaderType, outputType, includePaths, macros, additionOptions);
         dxcCompilerInstance->deleteLater();
     } else if (compiler == "GLSLANG") {
         glslangCompiler *glslangCompilerInstance = new glslangCompiler(this);
@@ -435,7 +440,7 @@ void DocumentWindow::compile()
             outputEdit->append(tr("Compilation warning:\n") + warning);
         });
 
-        glslangCompilerInstance->compile(inputEdit->toPlainText(), languageCombo->currentText(), shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
+        glslangCompilerInstance->compile(inputEdit->toPlainText(), languageCombo->currentText(), shaderModel, entryPoint, shaderType, outputType, includePaths, macros, additionOptions);
         glslangCompilerInstance->deleteLater();
     } else if (compiler == "GLSLANGKGVER") {
         glslangkgverCompiler *glslangkgverCompilerInstance = new glslangkgverCompiler(this);
@@ -461,7 +466,7 @@ void DocumentWindow::compile()
             outputEdit->append(tr("Compilation warning:\n") + warning);
         });
 
-        glslangkgverCompilerInstance->compile(inputEdit->toPlainText(), shaderModel, entryPoint, shaderType, outputType, includePaths, macros);
+        glslangkgverCompilerInstance->compile(inputEdit->toPlainText(), shaderModel, entryPoint, shaderType, outputType, includePaths, macros, additionOptions);
         glslangkgverCompilerInstance->deleteLater();
     }
 }
@@ -634,6 +639,12 @@ void DocumentWindow::loadSettings(QString settingsPath)
     
     QString outputType = settings.value("outputType", "DXIL").toString();
     compilerSettingUI->setOutputType(outputType);
+
+    // 恢复额外编译选项设置
+    bool extraOptionsEnabled = settings.value("extraOptionsEnabled", false).toBool();
+    QString extraOptions = settings.value("extraOptions", "").toString();
+    compilerSettingUI->setExtraOptionsEnabled(extraOptionsEnabled);
+    compilerSettingUI->setExtraOptions(extraOptions);
     
     lastOpenDir = settings.value("lastOpenDir", QDir::currentPath()).toString();
     
@@ -681,6 +692,10 @@ void DocumentWindow::saveSettings(QString settingsPath)
     settings.setValue("shaderType", compilerSettingUI->getShaderType());
     settings.setValue("shaderModel", compilerSettingUI->getShaderModel());
     settings.setValue("outputType", compilerSettingUI->getOutputType());
+
+    // 保存额外编译选项设置
+    settings.setValue("extraOptionsEnabled", compilerSettingUI->isExtraOptionsEnabled());
+    settings.setValue("extraOptions", compilerSettingUI->getExtraOptions());
     
     // 保存编码
     settings.setValue("encoding", encodingCombo->currentText());

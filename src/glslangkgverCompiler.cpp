@@ -17,7 +17,8 @@ void glslangkgverCompiler::compile(const QString &shaderCode,
                               const QString &shaderType,
                               const QString &outputType,
                               const QStringList &includePaths,
-                              const QStringList &macros)
+                              const QStringList &macros, 
+                              const QString &additionOptions)
 {
     GlslKgverCodePrebuilder codePrebuilder(includePaths);
     QString combinedShaderCode = codePrebuilder.parse(shaderCode, entryPoint);
@@ -64,7 +65,7 @@ void glslangkgverCompiler::compile(const QString &shaderCode,
     QString outputFilePath = QDir::temp().filePath("output_shader.spv");
 
     QFile::remove(outputFilePath);
-    QString command = buildCommand(tempFilePath, shaderModel, shaderType, outputType, includePaths, macros, outputFilePath);
+    QString command = buildCommand(tempFilePath, shaderModel, shaderType, outputType, includePaths, macros, outputFilePath, additionOptions);
     
     QProcess process;
     process.start(command);
@@ -148,7 +149,9 @@ QString glslangkgverCompiler::buildCommand(
                                       const QString &outputType,
                                       const QStringList &includePaths,
                                       const QStringList &macros,
-                                      const QString &outputFilePath)
+                                      const QString &outputFilePath, 
+                                      const QString &additionOptions
+                                      )
 {
     // 基础命令
     QString command = "glslangValidator";
@@ -175,7 +178,11 @@ QString glslangkgverCompiler::buildCommand(
     // 自动绑定uniform变量
     command += " --auto-map-bindings";
     command += " --auto-map-locations";
-    
+
+    if (!additionOptions.isEmpty()) {
+        command += " " + additionOptions;
+    }
+
     // 指定输出文件
     command += QString(" -V -o \"%1\"").arg(outputFilePath);
 

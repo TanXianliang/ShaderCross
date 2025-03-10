@@ -17,7 +17,8 @@ void dxcCompiler::compile(const QString &shaderCode,
                           const QString &shaderType,
                           const QString &outputType,
                           const QStringList &includePaths,
-                          const QStringList &macros) 
+                          const QStringList &macros,
+                          const QString &additionOptions) 
 {
     // 使用临时文件来存储 Shader 代码
     QString tempFilePath = QDir::temp().filePath("temp_shader.hlsl");
@@ -43,7 +44,7 @@ void dxcCompiler::compile(const QString &shaderCode,
     }
 
     QFile::remove(outputFilePath);
-    QString command = buildCommand(tempFilePath, shaderModel, entryPoint, shaderType, outputType, includePaths, macros, outputFilePath, bHLSL2021);
+    QString command = buildCommand(tempFilePath, shaderModel, entryPoint, shaderType, outputType, includePaths, macros, outputFilePath, bHLSL2021, additionOptions);
 
     QProcess process;
     process.start(command);
@@ -111,7 +112,8 @@ QString dxcCompiler::buildCommand(const QString &tempFilePath,
                                    const QStringList &includePaths,
                                    const QStringList &macros,
                                    const QString &outputFilePath,
-                                   bool bHLSL2021) 
+                                   bool bHLSL2021,
+                                   const QString &additionOptions) 
 {
     // 基础命令
     QString command = "dxc.exe";
@@ -146,10 +148,13 @@ QString dxcCompiler::buildCommand(const QString &tempFilePath,
         command += " -spirv";
     }
 
-    if (!bHLSL2021)
-    {
+    if (!bHLSL2021) {
         command += " -HV 2016";
     }
+
+    // 添加额外选项
+    if (additionOptions.isEmpty() == false) 
+        command += QString(" %1").arg(additionOptions);
     
     // 添加包含路径
     for (const QString &path : includePaths) {

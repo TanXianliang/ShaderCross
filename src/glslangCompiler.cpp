@@ -17,7 +17,8 @@ void glslangCompiler::compile(const QString &shaderCode,
                               const QString &shaderType,
                               const QString &outputType,
                               const QStringList &includePaths,
-                              const QStringList &macros)
+                              const QStringList &macros,
+                              const QString &additionOptions)
 {
     // 使用临时文件来存储 Shader 代码
     QString tempFilePath = QDir::temp().filePath("temp_shader.tempcode");
@@ -35,7 +36,7 @@ void glslangCompiler::compile(const QString &shaderCode,
     QString outputFilePath = QDir::temp().filePath("output_shader.spv");
 
     QFile::remove(outputFilePath);
-    QString command = buildCommand(tempFilePath, isHLSL, shaderModel, entryPoint, shaderType, outputType, includePaths, macros, outputFilePath);
+    QString command = buildCommand(tempFilePath, isHLSL, shaderModel, entryPoint, shaderType, outputType, includePaths, macros, outputFilePath, additionOptions);
     
     QProcess process;
     process.start(command);
@@ -113,7 +114,8 @@ QString glslangCompiler::buildCommand(const QString &tempFilePath,
                                       const QString &outputType,
                                       const QStringList &includePaths,
                                       const QStringList &macros,
-                                      const QString &outputFilePath)
+                                      const QString &outputFilePath,
+                                      const QString &additionOptions)
 {
     // 基础命令
     QString command = "glslangValidator";
@@ -141,6 +143,10 @@ QString glslangCompiler::buildCommand(const QString &tempFilePath,
         // 添加入口点
         command += QString(" -D -e %1 --hlsl-enable-16bit-types").arg(entryPoint); 
     }
+
+    // 添加额外选项
+    if (additionOptions.isEmpty() == false) 
+        command += QString(" %1").arg(additionOptions);
 
     // 自动绑定uniform变量
     command += " --auto-map-bindings";

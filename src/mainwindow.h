@@ -38,6 +38,7 @@ protected:
 public slots:
     void onNewDocument();
     void onNewDocumentByOpenWorkspace();
+    void openShaderFile();  // 添加打开着色器
     void onSaveResult();
     void onSaveWorkspace();
     void onResetLayout();

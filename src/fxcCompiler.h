@@ -10,12 +10,15 @@ class fxcCompiler : public QObject {
 
 public:
     explicit fxcCompiler(QObject *parent = nullptr);
+    
+    // 添加 additionOptions 参数，并设置默认值为空字符串
     void compile(const QString &shaderCode, 
-                const QString &shaderModel, 
-                const QString &entryPoint,
-                const QString &shaderType,
-                const QStringList &includePaths,
-                const QStringList &macros);
+                 const QString &shaderModel, 
+                 const QString &entryPoint, 
+                 const QString &shaderType,
+                 const QStringList &includePaths, 
+                 const QStringList &macros,
+                 const QString &additionOptions);
 
 signals:
     // 编译完成信号，携带输出结果。
@@ -34,7 +37,8 @@ private:
                         const QString &shaderType,
                         const QStringList &includePaths,
                         const QStringList &macros,
-                        const QString &outputFilePath);
+                        const QString &outputFilePath,
+                        const QString &additionOptions);
 };
 
 #endif // FXCCOMPILER_H

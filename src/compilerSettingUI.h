@@ -11,6 +11,7 @@
 #include <QtWidgets/QLabel>
 #include "compilerConfig.h"
 #include "languageConfig.h"
+#include <QtWidgets/QCheckBox>
 
 // CompilerSettingUI 类用于管理编译器设置的用户界面。
 class CompilerSettingUI : public QWidget
@@ -27,13 +28,17 @@ public:
     QString getEntryPoint() const;
     QString getShaderModel() const;
     QString getOutputType() const;
-
+    bool isExtraOptionsEnabled() const; // 获取额外选项是否启用
+    QString getExtraOptions() const; // 获取额外编译选项
+    
     // 设置当前配置
     void setCurrentCompiler(const QString &compiler);
     void setShaderType(const QString &type);
     void setEntryPoint(const QString &entry);
     void setShaderModel(const QString &model);
     void setOutputType(const QString &type);
+    void setExtraOptionsEnabled(bool enabled); // 设置额外选项是否启用
+    void setExtraOptions(const QString &options); // 设置额外编译选项
 
 public slots:
     // 响应语言变化
@@ -53,6 +58,8 @@ private:
     QLineEdit *entryPointEdit; // 入口点输入框
     QComboBox *shaderModelCombo; // 着色器模型选择下拉框
     QComboBox *outputTypeCombo; // 输出类型选择下拉框
+    QCheckBox *extraOptionsCheckBox; // 额外编译选项复选框
+    QLineEdit *extraOptionsEdit; // 额外编译选项输入框
     QPushButton *buildButton; // 构建按钮
 
     // 设置 UI 组件

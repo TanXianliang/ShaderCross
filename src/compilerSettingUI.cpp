@@ -52,7 +52,18 @@ void CompilerSettingUI::setupUI()
     outputTypeLayout->addWidget(outputTypeCombo);
     compilerLayout->addLayout(outputTypeLayout);
 
-    // 编译按钮
+    // 在构建按钮之前添加额外编译选项控件
+    QHBoxLayout *extraOptionsLayout = new QHBoxLayout();
+    extraOptionsCheckBox = new QCheckBox(tr("Additional Options:"), this);
+    extraOptionsCheckBox->setCheckState(Qt::Unchecked); // 默认未选中
+    extraOptionsEdit = new QLineEdit(this);
+    extraOptionsEdit->setEnabled(false); // 默认禁用
+    
+    extraOptionsLayout->addWidget(extraOptionsCheckBox);
+    extraOptionsLayout->addWidget(extraOptionsEdit, 1); // 让输入框占据更多空间
+    compilerLayout->addLayout(extraOptionsLayout);
+    
+    // 构建按钮
     buildButton = new QPushButton(tr("Build"), this);
     compilerLayout->addWidget(buildButton);
 
@@ -68,6 +79,9 @@ void CompilerSettingUI::setupConnections()
             this, &CompilerSettingUI::compilerChanged);
     connect(buildButton, &QPushButton::clicked, 
             this, &CompilerSettingUI::buildClicked);
+    
+    // 连接额外选项复选框信号
+    connect(extraOptionsCheckBox, &QCheckBox::toggled, extraOptionsEdit, &QLineEdit::setEnabled);
 }
 
 // 获取当前设置
@@ -177,4 +191,26 @@ void CompilerSettingUI::onLanguageChanged(const QString &language)
                 shaderTypeCombo->setCurrentIndex(0);
         }
     }
+}
+
+// 实现新增的 getter 和 setter 方法
+bool CompilerSettingUI::isExtraOptionsEnabled() const
+{
+    return extraOptionsCheckBox->isChecked();
+}
+
+QString CompilerSettingUI::getExtraOptions() const
+{
+    return extraOptionsEdit->text();
+}
+
+void CompilerSettingUI::setExtraOptionsEnabled(bool enabled)
+{
+    extraOptionsCheckBox->setChecked(enabled);
+    extraOptionsEdit->setEnabled(enabled);
+}
+
+void CompilerSettingUI::setExtraOptions(const QString &options)
+{
+    extraOptionsEdit->setText(options);
 }

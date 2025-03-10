@@ -13,15 +13,12 @@ public:
     // 构造函数，初始化 dxcCompiler。
     explicit dxcCompiler(QObject *parent = nullptr);
     
-    // 修改编译方法，接受 Shader 代码字符串
-    void compile(const QString &shaderCode, 
-                 const QString &languageType,
-                 const QString &shaderModel, 
-                 const QString &entryPoint,
-                 const QString &shaderType,
-                 const QString &outputType,
-                 const QStringList &includePaths,
-                 const QStringList &macros);
+    // 添加 additionOptions 参数，并设置默认值为空字符串
+    void compile(const QString &shaderCode, const QString &language,
+                 const QString &shaderModel, const QString &entryPoint, 
+                 const QString &shaderType, const QString &outputType,
+                 const QStringList &includePaths, const QStringList &macros,
+                 const QString &additionOptions);
 
 signals:
     // 编译完成信号，携带输出结果。
@@ -43,7 +40,8 @@ private:
                          const QStringList &includePaths,
                          const QStringList &macros,
                          const QString &outputFilePath,
-                         bool isHLSL2021);
+                         bool isHLSL2021,
+                         const QString &additionOptions);
 };
 
 #endif // DXCCOMPILER_H

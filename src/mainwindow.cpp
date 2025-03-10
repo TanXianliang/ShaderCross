@@ -135,6 +135,8 @@ void MainWindow::createMenus()
     fileMenu->addAction(tr("New Document"), this, &MainWindow::onNewDocument, QKeySequence::New);
     fileMenu->addSeparator();
     fileMenu->addAction(tr("Open Workspace"), this, &MainWindow::onNewDocumentByOpenWorkspace);
+    fileMenu->addAction(tr("Open Shader File"), this, &MainWindow::openShaderFile, QKeySequence(Qt::CTRL | Qt::Key_O)); // 打开着色器文件动作
+
     fileMenu->addSeparator();
     fileMenu->addAction(tr("Save Code"), this, &MainWindow::onSaveResult, QKeySequence::Save);
     fileMenu->addAction(tr("Save Workspace"), this, &MainWindow::onSaveWorkspace);
@@ -412,6 +414,16 @@ void MainWindow::onNewDocumentByOpenWorkspace()
             tabWidget->tabBar()->setTabsClosable(true); // 启用关闭按钮
             newDocument->show(); // 显示新文档窗口
         } while (!ok);
+    }
+}
+
+void MainWindow::openShaderFile()
+{
+    // 获取当前活动的文档窗口
+    DocumentWindow *currentDoc = qobject_cast<DocumentWindow*>(tabWidget->currentWidget());
+    if (currentDoc) {
+        // 如果有活动窗口，调用其onBrowseFile方法
+        currentDoc->onBrowseFile();
     }
 }
 
