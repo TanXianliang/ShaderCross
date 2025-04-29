@@ -5,6 +5,7 @@
 #include <QTextStream>
 #include <QDir>
 #include "spirvUtils.h"
+#include <windows.h>
 
 // 构造函数，初始化 dxcCompiler。
 dxcCompiler::dxcCompiler(QObject *parent) : QObject(parent) {}
@@ -46,9 +47,22 @@ void dxcCompiler::compile(const QString &shaderCode,
     QFile::remove(outputFilePath);
     QString command = buildCommand(tempFilePath, shaderModel, entryPoint, shaderType, outputType, includePaths, macros, outputFilePath, bHLSL2021, additionOptions);
 
+    LARGE_INTEGER Frequecy;
+    QueryPerformanceFrequency(&Frequecy);
+
+    double s_SecondsPerCPUCyscle = 1.0f / (double)Frequecy.QuadPart;
+
+    LARGE_INTEGER BeginCircle;
+    QueryPerformanceCounter(&BeginCircle);
+
     QProcess process;
     process.start(command);
     process.waitForFinished();
+
+    LARGE_INTEGER EndCircle;
+    QueryPerformanceCounter(&EndCircle);
+
+    auto ToSec = s_SecondsPerCPUCyscle* (double)((int64_t)EndCircle.QuadPart - (int64_t)BeginCircle.QuadPart);
 
     QString output = process.readAllStandardOutput();
     QString error = process.readAllStandardError();
@@ -86,7 +100,7 @@ void dxcCompiler::compile(const QString &shaderCode,
                 }
             }
 
-            emit compilationFinished(output);
+            emit compilationFinished(output + "\n" + QString("cost time: %1s").arg(ToSec));
 
             // 如果 error 非空，将其输出为警告信息
             if (!error.isEmpty()) {

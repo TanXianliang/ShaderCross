@@ -4,6 +4,7 @@
 #include <QFile>
 #include <QTextStream>
 #include <QDir>
+#include <Windows.h>
 
 fxcCompiler::fxcCompiler(QObject *parent) : QObject(parent) {}
 
@@ -30,9 +31,22 @@ void fxcCompiler::compile(
     QString outputFilePath = QDir::temp().filePath("output_shader.dxbc");
     QString command = buildCommand(tempFilePath, shaderModel, entryPoint, shaderType, includePaths, macros, outputFilePath, additionOptions);
     
+    LARGE_INTEGER Frequecy;
+    QueryPerformanceFrequency(&Frequecy);
+
+    double s_SecondsPerCPUCyscle = 1.0f / (double)Frequecy.QuadPart;
+
+    LARGE_INTEGER BeginCircle;
+    QueryPerformanceCounter(&BeginCircle);
+
     QProcess process;
     process.start(command);
     process.waitForFinished();
+
+    LARGE_INTEGER EndCircle;
+    QueryPerformanceCounter(&EndCircle);
+
+    auto ToSec = s_SecondsPerCPUCyscle * (double)((int64_t)EndCircle.QuadPart - (int64_t)BeginCircle.QuadPart);
 
     QString output = process.readAllStandardOutput();
     QString error = process.readAllStandardError();
@@ -55,7 +69,7 @@ void fxcCompiler::compile(
             emit compilationError(errorDisasm.isEmpty() ? "Compilation failed with no output." : errorDisasm);
         }
         else {
-            emit compilationFinished(output);
+            emit compilationFinished(output + "\n" + QString("cost time: %1s").arg(ToSec));
 
             // 如果 error 非空，将其输出为警告信息
             if (!error.isEmpty()) {
