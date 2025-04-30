@@ -97,57 +97,6 @@ add_custom_command(TARGET ShaderCross POST_BUILD
         $<TARGET_FILE_DIR:ShaderCross>
 )
 
-add_custom_command(TARGET ShaderCross POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/$<CONFIG>/imageformats
-)
-
-add_custom_command(TARGET ShaderCross POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/$<CONFIG>/styles
-)
-
-add_custom_command(TARGET ShaderCross POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/$<CONFIG>/platforms
-)
-
-add_custom_command(TARGET ShaderCross POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${QT_BIN_PATH}/Qt5Widgets.dll
-        ${QT_BIN_PATH}/Qt5Core.dll
-        ${QT_BIN_PATH}/Qt5Gui.dll
-        ${QT_BIN_PATH}/Qt5Svg.dll
-        $<TARGET_FILE_DIR:ShaderCross>
-)
-
-add_custom_command(TARGET ShaderCross POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${QT_PLUGIN_PATH}/imageformats/qgif.dll
-        ${QT_PLUGIN_PATH}/imageformats/qicns.dll
-        ${QT_PLUGIN_PATH}/imageformats/qico.dll
-        ${QT_PLUGIN_PATH}/imageformats/qjpeg.dll
-        ${QT_PLUGIN_PATH}/imageformats/qsvg.dll
-        ${QT_PLUGIN_PATH}/imageformats/qtga.dll
-        ${QT_PLUGIN_PATH}/imageformats/qtiff.dll
-        ${QT_PLUGIN_PATH}/imageformats/qwbmp.dll
-        ${QT_PLUGIN_PATH}/imageformats/qwebp.dll
-        ${CMAKE_BINARY_DIR}/$<CONFIG>/imageformats
-)
-
-add_custom_command(TARGET ShaderCross POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${QT_PLUGIN_PATH}/platforms/qdirect2d.dll
-        ${QT_PLUGIN_PATH}/platforms/qminimal.dll
-        ${QT_PLUGIN_PATH}/platforms/qoffscreen.dll
-        ${QT_PLUGIN_PATH}/platforms/qwebgl.dll
-        ${QT_PLUGIN_PATH}/platforms/qwindows.dll
-        ${CMAKE_BINARY_DIR}/$<CONFIG>/platforms
-)
-
-add_custom_command(TARGET ShaderCross POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${QT_PLUGIN_PATH}/styles/qwindowsvistastyle.dll
-        ${CMAKE_BINARY_DIR}/$<CONFIG>/styles
-)
-
 # 复制 shader compile 依赖工具到输出目录
 add_custom_command(TARGET ShaderCross POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/$<CONFIG>/external

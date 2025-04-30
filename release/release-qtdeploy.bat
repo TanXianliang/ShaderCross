@@ -1,0 +1,1 @@
+c:\Qt\Qt5.12.5\5.12.5\msvc2017_64\bin\windeployqt.exe shader-cross\ShaderCross.exe --release
