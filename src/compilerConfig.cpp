@@ -39,7 +39,7 @@ CompilerConfig::CompilerConfig() {
         << "Vertex" << "Pixel" << "Geometry" << "Hull" << "Domain" << "Compute"
         << "RayGeneration" << "RayIntersection" << "RayAnyHit" << "RayClosestHit"
         << "RayMiss" << "RayCallable" << "Amplification" << "Mesh";
-    dxc.supportedShaderModels = QStringList() << "5_0" << "5_1" << "6_0" << "6_4";
+    dxc.supportedShaderModels = QStringList() << "5_0" << "5_1" << "6_0" << "6_4" << "6_6" << "6_7";
     dxc.supportedOutputTypes = QStringList() << "DXIL" << "SPIR-V" << "GLSL";
     compilerCapabilities["DXC"] = dxc;
 
