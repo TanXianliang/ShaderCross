@@ -35,7 +35,11 @@ void dxcCompiler::compile(const QString &shaderCode,
     QString outputFilePath;
     if (outputType == "DXIL") {
         outputFilePath = QDir::temp().filePath("output_shader.dxil");
-    } else{
+    }
+    else if (outputType == "Preprocess-HLSL") {
+        outputFilePath = QDir::temp().filePath("output_shader.hlsl");
+    }
+    else {
         outputFilePath = QDir::temp().filePath("output_shader.spv");
     }
 
@@ -71,24 +75,39 @@ void dxcCompiler::compile(const QString &shaderCode,
         emit compilationError(error.isEmpty() ? "Compilation failed with no output." : error);
     } else {
         QProcess process;
+        QString errorDisasm;
 
         if (outputType == "DXIL"){
             // 使用dxc反编译DXIL
             QString dxilDisasmCommand = QString("dxc.exe -dumpbin \"%1\"").arg(outputFilePath);
             process.start(dxilDisasmCommand);
+            process.waitForFinished();
+            output = process.readAllStandardOutput();
+            QString errorDisasm = process.readAllStandardError();
         } else if (outputType == "SPIR-V"){
             // 使用spirv-dis反编译SPIR-V
             QString spirvDisCommand = QString("spirv-dis.exe \"%1\"").arg(outputFilePath);
             process.start(spirvDisCommand);
+            process.waitForFinished();
+            output = process.readAllStandardOutput();
+            QString errorDisasm = process.readAllStandardError();
         } else if (outputType == "GLSL"){
             // 使用spirv-cross将SPIR-V转换为GLSL
             QString spirvCrossCommand = QString("spirv-cross.exe \"%1\" -V").arg(outputFilePath);
             process.start(spirvCrossCommand);
+            process.waitForFinished();
+            output = process.readAllStandardOutput();
+            QString errorDisasm = process.readAllStandardError();
+        } else if (outputType == "Preprocess-HLSL") {
+            QFile outFile(outputFilePath);
+            if (!outFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                emit compilationError("Failed to create temporary shader file.");
+                return;
+            }
+            QTextStream out(&outFile);
+            output = out.readAll();  // 写入 Shader 代码
+            outFile.close();
         }
-
-        process.waitForFinished();
-        output = process.readAllStandardOutput();
-        QString errorDisasm = process.readAllStandardError();
 
         if (output.isEmpty()) {
             emit compilationError(errorDisasm.isEmpty() ? "Compilation failed with no output." : errorDisasm);
@@ -162,6 +181,10 @@ QString dxcCompiler::buildCommand(const QString &tempFilePath,
         command += " -spirv";
     }
 
+    if (outputType == "Preprocess-HLSL") {
+        command += " -P";
+    }
+
     if (!bHLSL2021) {
         command += " -HV 2016";
     }
@@ -180,8 +203,13 @@ QString dxcCompiler::buildCommand(const QString &tempFilePath,
         command += QString(" -D %1").arg(macro);
     }
 
-    command += QString(" -Fo \"%1\"").arg(outputFilePath);
-    
+    if (outputType != "Preprocess-HLSL") {
+        command += QString(" -Fo \"%1\"").arg(outputFilePath);
+    }
+    else {
+        command += QString(" -Fi \"%1\"").arg(outputFilePath);
+    }
+
     // 添加输入文件
     command += QString(" \"%1\"").arg(tempFilePath);
     

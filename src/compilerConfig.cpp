@@ -40,7 +40,7 @@ CompilerConfig::CompilerConfig() {
         << "RayGeneration" << "RayIntersection" << "RayAnyHit" << "RayClosestHit"
         << "RayMiss" << "RayCallable" << "Amplification" << "Mesh";
     dxc.supportedShaderModels = QStringList() << "5_0" << "5_1" << "6_0" << "6_4" << "6_6" << "6_7";
-    dxc.supportedOutputTypes = QStringList() << "DXIL" << "SPIR-V" << "GLSL";
+    dxc.supportedOutputTypes = QStringList() << "DXIL" << "SPIR-V" << "GLSL" << "Preprocess-HLSL";
     compilerCapabilities["DXC"] = dxc;
 
     // GLSLANG 编译器配置
